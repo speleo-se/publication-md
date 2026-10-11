@@ -1,0 +1,8 @@
+{
+  "name": "@tvartom/pagesequence",
+  "version": "1.3.3",
+  "homepage": "https://jsr.io/@tvartom/pagesequence",
+  "description": "Vendored build of jsr:@tvartom/pagesequence 1.3.3 (npm.jsr.io is not reachable from this repo's devcontainer). Do not edit; replace with a newer build.",
+  "type": "module",
+  "exports": { ".": { "types": "./_dist/index.d.ts", "default": "./index.js" } }
+}

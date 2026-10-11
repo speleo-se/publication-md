@@ -1,0 +1,8 @@
+node_modules/
+# Checked-out / linked content repos and their render trees (see README "Workspace")
+content/*
+!content/.gitkeep
+work/*
+!work/.gitkeep
+__pycache__/
+*.pdf

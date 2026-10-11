@@ -1,0 +1,10 @@
+# Known content repos using publication-md. Add yours with a pull request.
+# access: public | private (say how access is obtained)
+- name: grottan
+  repo: https://github.com/speleo-se/grottan-markdown-content
+  title: Grottan — Sveriges Speleologförbunds medlemstidning (1966–)
+  owner: Sveriges Speleologförbund (SSF)
+  copyright: © Sveriges Speleologförbund
+  access: private — on request to SSF
+  language: sv
+  units: periodical issues, scanned (1966–2006) and born-digital (2007–)

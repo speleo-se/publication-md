@@ -1,0 +1,22 @@
+{
+	"compilerOptions": {
+		"target": "ES2024",
+		"module": "ESNext",
+		"moduleResolution": "bundler",
+		"lib": ["ESNext"],
+		"types": ["node"],
+		"strict": true,
+		"noEmit": true,
+		"skipLibCheck": true,
+		"isolatedModules": true,
+		"noUncheckedIndexedAccess": true,
+		"exactOptionalPropertyTypes": true,
+		"noUnusedLocals": true,
+		"resolveJsonModule": true,
+		// Sources import each other with `.ts` and run under Node's native type stripping.
+		"allowImportingTsExtensions": true,
+		"erasableSyntaxOnly": true,
+		"verbatimModuleSyntax": true
+	},
+	"include": ["lib/src/**/*", "tools/**/*"]
+}

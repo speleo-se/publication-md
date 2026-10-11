@@ -1,0 +1,119 @@
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"$id": "https://speleotastic.com/schema/publication-md/1.json",
+	"title": "publication-md v1",
+	"description": "publication.md frontmatter and the YAML payloads of part/figure/note comment blocks. Cross-file rules (uniqueness, ordering, references) are enforced by the reference validator only. See README.md.",
+	"$ref": "#/$defs/publication",
+	"$defs": {
+		"person": {
+			"oneOf": [
+				{ "type": "string", "minLength": 1 },
+				{
+					"type": "object",
+					"required": ["name"],
+					"properties": { "name": { "type": "string", "minLength": 1 }, "role": { "type": "string" } }
+				}
+			]
+		},
+		"people": { "type": "array", "items": { "$ref": "#/$defs/person" } },
+		"scalar": { "type": ["string", "number"] },
+		"container": {
+			"type": "object",
+			"required": ["type"],
+			"properties": {
+				"type": { "type": "string" },
+				"id": { "type": "string" },
+				"title": { "type": "string" },
+				"issn": { "type": "string" },
+				"isbn": { "type": "string" },
+				"number": { "$ref": "#/$defs/scalar" },
+				"page": { "type": "string" }
+			}
+		},
+		"publication": {
+			"type": "object",
+			"required": ["format", "id", "type"],
+			"properties": {
+				"format": { "const": "publication-md/1" },
+				"id": { "type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._|:-]*$" },
+				"type": { "type": "string", "minLength": 1 },
+				"title": { "type": "string" },
+				"authors": { "$ref": "#/$defs/people" },
+				"editors": { "$ref": "#/$defs/people" },
+				"issued": { "type": ["string", "integer"], "pattern": "^\\d{4}(-\\d{2}(-\\d{2})?)?$" },
+				"publisher": { "type": "string" },
+				"language": { "type": "string" },
+				"rights": { "type": "string" },
+				"identifiers": { "type": "object", "additionalProperties": { "$ref": "#/$defs/scalar" } },
+				"container": { "$ref": "#/$defs/container" },
+				"volume": { "$ref": "#/$defs/scalar" },
+				"issue": { "$ref": "#/$defs/scalar" },
+				"source": {
+					"type": "object",
+					"properties": { "file": { "type": "string" }, "kind": { "enum": ["scanned", "digital"] } }
+				},
+				"pageSequence": {
+					"type": "string",
+					"description": "Printed page labels of every PDF page in PageSequence syntax (@tvartom/pagesequence), e.g. \"Omslag|2,3-30,!30,31-36\"."
+				}
+			}
+		},
+		"page": {
+			"description": "Payload of <!-- page: <label> -->: the printed page label.",
+			"oneOf": [{ "type": "string", "minLength": 1 }, { "type": "number" }]
+		},
+		"part": {
+			"oneOf": [
+				{ "const": "none" },
+				{
+					"type": "object",
+					"description": "Continuation: resumes an earlier part after an interruption.",
+					"required": ["key", "continued"],
+					"additionalProperties": false,
+					"properties": { "key": { "type": "string", "minLength": 1 }, "continued": { "const": true } }
+				},
+				{
+					"type": "object",
+					"required": ["key", "type"],
+					"properties": {
+						"key": { "type": "string", "minLength": 1 },
+						"type": { "type": "string", "minLength": 1 },
+						"genre": { "type": "string" },
+						"title": { "type": "string" },
+						"subtitle": { "type": "string" },
+						"authors": { "$ref": "#/$defs/people" },
+						"rights": { "type": "string" },
+						"pages": { "type": "string", "description": "Printed page range in PageSequence syntax." }
+					}
+				}
+			]
+		},
+		"figure": {
+			"type": "object",
+			"required": ["key"],
+			"properties": {
+				"key": {
+					"type": "string",
+					"minLength": 1,
+					"description": "Stable identity <unit>|<printed page(s)>|<n>, kept when the region is re-cropped."
+				},
+				"kind": { "type": "string" },
+				"caption": { "type": "string" },
+				"creators": { "$ref": "#/$defs/people" },
+				"license": { "type": "string" }
+			}
+		},
+		"note": {
+			"type": "object",
+			"required": ["type", "text"],
+			"properties": {
+				"type": { "enum": ["transcription", "editorial"] },
+				"text": { "type": "string", "minLength": 1 }
+			}
+		},
+		"imagePath": {
+			"type": "string",
+			"pattern": "(^|/)p\\d{3,}_pct-\\d+(\\.\\d{1,2})?,\\d+(\\.\\d{1,2})?,\\d+(\\.\\d{1,2})?,\\d+(\\.\\d{1,2})?\\.jpg$"
+		}
+	}
+}

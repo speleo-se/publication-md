@@ -1,0 +1,62 @@
+// For format details, see https://aka.ms/devcontainer.json. For config options, see the
+// README at: https://github.com/devcontainers/templates/tree/main/src/typescript-node
+{
+	"name": "publication-md — Claude Code + PDF tools",
+	// Or use a Dockerfile or Docker Compose file. More info: https://containers.dev/guide/dockerfile
+	"build": {
+		"dockerfile": "Dockerfile",
+		"args": {
+			"TZ": "${localEnv:TZ:Europe/Stockholm}",
+			"GIT_DELTA_VERSION": "0.18.2",
+			"ZSH_IN_DOCKER_VERSION": "1.2.0"
+		}
+	},
+
+	"runArgs": [
+		// NET_ADMIN / NET_RAW are required by the default-DROP egress firewall (init-firewall.sh).
+		"--cap-add=NET_ADMIN",
+		"--cap-add=NET_RAW"
+	],
+	// Configure tool-specific properties.
+
+	"customizations": {
+		"vscode": {
+			"extensions": [
+				"anthropic.claude-code",
+				"eamodio.gitlens",
+				"mhutchie.git-graph"
+			],
+			"settings": {
+				"terminal.integrated.defaultProfile.linux": "zsh",
+				"terminal.integrated.profiles.linux": {
+					"bash": {
+						"path": "bash",
+						"icon": "terminal-bash"
+					},
+					"zsh": {
+						"path": "zsh"
+					}
+				}
+			}
+		}
+	},
+	"remoteUser": "node",
+	"mounts": [
+		"source=claude-code-bashhistory-${devcontainerId},target=/commandhistory,type=volume",
+		"source=claude-code-config-${devcontainerId},target=/home/node/.claude,type=volume",
+		// gdrive CLI credentials (npm run fetch for gdrive sources), kept across rebuilds
+		"source=gdrive-config-${devcontainerId},target=/home/node/.config/gdrive3,type=volume"
+	],
+	"containerEnv": {
+		"NODE_OPTIONS": "--max-old-space-size=4096",
+		"CLAUDE_CONFIG_DIR": "/home/node/.claude",
+		"POWERLEVEL9K_DISABLE_GITSTATUS": "true",
+		"LAUNCH_EDITOR": "code"
+	},
+	"workspaceMount": "source=${localWorkspaceFolder},target=/workspace,type=bind,consistency=delegated",
+	"workspaceFolder": "/workspace",
+	"postStartCommand": {
+		"initFirewall": "sudo /usr/local/bin/init-firewall.sh"
+	},
+	"waitFor": "postStartCommand"
+}
