@@ -54,8 +54,8 @@ RUN mkdir -p /workspace /home/node/.claude /home/node/.config && \
 
 WORKDIR /workspace
 
-# Install the PDF / OCR toolchain used by the `pdf-extract` and `pdf-fixer` skills
-# (.claude/skills/pdf-extract, .claude/skills/pdf-fixer).
+# Install the PDF / OCR toolchain used by the `pdf-extract` and `transcribe` skills
+# (.claude/skills/pdf-extract, .claude/skills/transcribe).
 # poppler-utils: pdftoppm/pdftotext/pdffonts/pdfimages (page-image + text extraction)
 # tesseract-ocr + language packs: OCR with hOCR word boxes. eng+swe are installed; add the
 # tesseract-ocr-<lang> packs your content needs (and set PDF_EXTRACT_LANGS).

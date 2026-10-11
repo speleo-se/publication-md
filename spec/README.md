@@ -216,6 +216,51 @@ text itself.
 <!-- note: {type: transcription, text: "Listan är i trycket satt i två spalter."} -->
 ```
 
+### 3.5 References
+
+Mentions of other publications, pages, articles and of real-world entities (caves, people,
+places, organisations) are ordinary markdown links to files under the content repo's `ref/`
+folder. The **path is the identity**; the files are generated (`npm run refs`) and forward to
+the target, so the links work in any markdown viewer — GitHub included — without special syntax:
+
+```markdown
+…beskrevs i [Grottan nr 4, 1982](../ref/grottan/1982-4.md).
+…kan du läsa i [Grottan nr 4 1986, sidan 22](../ref/grottan/1986-4/p22.md).
+…se [artikeln](../ref/grottan/1987-2/1987-2~4-9~1.md).
+…grottan [Torekulla kyrka](../ref/ssf/933.md) i Östergötland.
+…[Degerfällegrottan](../ref/ssf/unknown.md) norr om Örnsköldsvik.
+```
+
+Every target sits in a **namespace folder** declared under `refs:` in `publication-md.yaml`.
+A units namespace (`grottan: {units: true}`) holds the repo's own units — unit id
+`<namespace>-<local>` ↔ path `ref/<namespace>/<local>` — and every other namespace holds entities:
+
+| Path (from a page file) | Target |
+|---|---|
+| `../ref/<ns>/<local>.md` | a unit (`../ref/grottan/1982-4.md` = unit `grottan-1982-4`) |
+| `../ref/<ns>/<local>/p<label>.md` | a printed page of a unit (resolved through its `pageSequence`) |
+| `../ref/<ns>/<local>/<key>.md` | a part or figure by key, `|` written `~` |
+| `../ref/<ns>/<id>.md` | an entity (`../ref/ssf/933.md`) |
+| `../ref/<ns>/unknown.md` | an entity of that kind whose id is not known yet (a to-do list) |
+
+Canonical string forms (for tools and imports): `grottan-1982-4`, `grottan-1986-4@22`,
+`grottan-1987-2#1987-2|4-9|1`, `ssf:933`, `ssf:?`.
+
+**What a part or figure is about** goes in `subjects` — the same identities without the file
+decoration, resolved ids only:
+
+```markdown
+<!-- figure: {key: "1987-2|1|1", kind: cover, subjects: [ssf/175]} -->
+<!-- part: {key: "1987-2|14-18|1", type: article-magazine, subjects: [ssf/1375, ssf/1496, grottan/1986-4]} -->
+```
+
+A mention says "this text names X"; a subject says "this article/picture is about X". An entity's
+generated `ref/` file lists both, across the whole corpus — for a cave, its bibliography.
+
+Choose namespaces whose ids outlive any one database: an authority's own numbers (e.g. SSF's
+*riksnummer* for Swedish caves), Wikidata, GeoNames. A consuming system maps them to its own ids
+on import.
+
 ## 4. People
 
 A person is a bare name (`Anna Svensson`) or `{name, role}`. `role` is free text; use
@@ -264,7 +309,8 @@ rectangle on the page and convert it to percentages.
 node tools/validate.ts [unit…] [--errors-only]
 ```
 
-Errors: malformed blocks or YAML, unknown comments (incl. the pre-v1 `<!-- page N -->`), invalid
+Errors: reference links that don't parse or whose unit, page, key or namespace doesn't exist,
+unresolved `subjects`, malformed blocks or YAML, unknown comments (incl. the pre-v1 `<!-- page N -->`), invalid
 `pageSequence` or one whose page count differs from the files, page markers that differ from
 `pageSequence` (or, without it, numeric markers out of order), `part.pages` that don't resolve, duplicate part or figure keys, a figure using the old `id` field,
 figure not directly after an image, image path in `img/` that doesn't parse, missing required fields, unknown `container.id`. Warnings: part/figure keys whose pages segment doesn't resolve in `pageSequence`, unknown keys,

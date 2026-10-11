@@ -98,8 +98,9 @@ const PART_KEYS = new Set([
 	'authors',
 	'rights',
 	'pages',
+	'subjects',
 ])
-const FIGURE_KEYS = new Set(['key', 'kind', 'caption', 'creators', 'license'])
+const FIGURE_KEYS = new Set(['key', 'kind', 'caption', 'creators', 'license', 'subjects'])
 const NOTE_TYPES = new Set(['transcription', 'editorial'])
 
 /**

@@ -4,7 +4,7 @@
  */
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs'
 import { basename, join, resolve } from 'node:path'
-import { type Context, type Problem, parsePeople, type UnitInput } from '../lib/src/index.ts'
+import { buildCorpus, type Context, type Corpus, type Problem, parsePeople, type UnitInput } from '../lib/src/index.ts'
 import { loadWorkspace, takeContentArg, type Workspace } from './workspace.ts'
 
 /** Resolve the workspace from argv (consumes `--content <name>`). */
@@ -63,4 +63,15 @@ export function loadContext(ws: Workspace): { ctx: Context; problems: Problem[] 
 			: [],
 	)
 	return { ctx: { people: index, collections }, problems }
+}
+
+/** Every unit of the content repo, indexed for cross-unit work (refs). */
+export function readCorpus(ws: Workspace): Corpus {
+	const inputs = findUnits(ws, []).map((folder) => {
+		const u = readUnit(ws, folder)
+		return u.publication === undefined
+			? { folder, pages: u.pages }
+			: { folder, publication: u.publication, pages: u.pages }
+	})
+	return buildCorpus(inputs, ws.config)
 }

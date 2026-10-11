@@ -25,5 +25,18 @@ export {
 	type Source,
 	sourceCovers,
 	type UnitInfo,
+	unitId,
 	unitInfo,
 } from './contentConfig.ts'
+export {
+	buildCorpus,
+	type Corpus,
+	type CorpusUnit,
+	type CorpusUnitInput,
+	collectRefs,
+	labelAt,
+	type Mention,
+	type RefEntry,
+	resolveLabel,
+} from './corpus.ts'
+export { findLinks, type LinkHit, parseRef, parseSubject, type RefTarget, refId, refPath } from './refs.ts'

@@ -4,10 +4,17 @@
 	"description": "publication-md: a plain-text format (Markdown + YAML) for transcribed publications, with a reference library, tools and Claude Code skills.",
 	"license": "MIT",
 	"author": "Lasse Hellman",
-	"repository": { "type": "git", "url": "git+https://github.com/speleo-se/publication-md.git" },
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/speleo-se/publication-md.git"
+	},
 	"type": "module",
-	"exports": { ".": "./lib/src/index.ts" },
-	"engines": { "node": ">=22.18" },
+	"exports": {
+		".": "./lib/src/index.ts"
+	},
+	"engines": {
+		"node": ">=22.18"
+	},
 	"scripts": {
 		"content": "node tools/content.ts",
 		"fetch": "node tools/fetch-sources.ts",
@@ -15,7 +22,8 @@
 		"extract-images": "node tools/extract-images.ts",
 		"stats": "node tools/stats.ts",
 		"test": "vitest run",
-		"typecheck": "tsc --noEmit"
+		"typecheck": "tsc --noEmit",
+		"refs": "node tools/refs.ts"
 	},
 	"dependencies": {
 		"@hyzyla/pdfium": "^2.1.13",

@@ -9,8 +9,8 @@
  * Acts on the active content repo (`--content <name>` to pick another). Exit code 1 on errors.
  */
 import { basename } from 'node:path'
-import { validateUnit } from '../lib/src/index.ts'
-import { findUnits, loadContext, readUnit, workspaceFromArgs } from './units.ts'
+import { collectRefs, validateUnit } from '../lib/src/index.ts'
+import { findUnits, loadContext, readCorpus, readUnit, workspaceFromArgs } from './units.ts'
 
 const args = process.argv.slice(2)
 const ws = workspaceFromArgs(args)
@@ -32,6 +32,13 @@ for (const p of ctxProblems) report('.', p)
 const units = findUnits(ws, tokens)
 for (const name of units) {
 	for (const p of validateUnit(readUnit(ws, name), ctx)) report(basename(name), p)
+}
+// References are checked against the whole corpus (targets may be in any unit); only the
+// problems of the units being validated are reported.
+const selected = new Set(units.map((u) => basename(u)))
+for (const p of collectRefs(readCorpus(ws)).problems) {
+	const [unit, ...rest] = p.file.split('/')
+	if (unit && selected.has(unit)) report(unit, { ...p, file: rest.join('/') })
 }
 console.log(`\n${units.length} unit(s): ${errors} error(s), ${warnings} warning(s)`)
 process.exit(errors ? 1 : 0)

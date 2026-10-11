@@ -39,12 +39,23 @@ export interface ContentConfig {
 		 * drive sorting and display. The first match wins.
 		 */
 		patterns?: string[]
+		/**
+		 * Template for every unit's id (= `publication.md` `id`), filled from the pattern groups:
+		 * `grottan-{year}-{issue}`. Lets references target units that have no publication.md yet.
+		 */
+		id?: string
 	}
 	sources?: Source[]
 	/** Folder (relative to the content repo) with content-specific skill rules. Default `rules`. */
 	rules?: string
 	/** Domains the devcontainer firewall must allow for this content. */
 	firewall?: string[]
+	/**
+	 * Reference namespaces (`ref/<ns>/…`). `units: true` marks a namespace of publication units —
+	 * this repo's own (`ref/grottan/1982-4.md` ↔ unit id `grottan-1982-4`); the others are entity
+	 * namespaces (`ref/ssf/933.md`), optionally with a URL template (`{id}`) to the authority.
+	 */
+	refs?: Record<string, { title?: string; url?: string; units?: boolean }>
 	/** Options for the transcription tooling, e.g. `noteLabel`, `alphabet`. */
 	transcribe?: Record<string, unknown>
 	[key: string]: unknown
@@ -98,6 +109,15 @@ export function parseContentConfig(text: string): { config: ContentConfig | null
 				}
 			}
 	}
+	if (d.refs !== undefined) {
+		if (!isObj(d.refs)) err('refs must map namespace → {title, url}')
+		else
+			for (const [ns, v] of Object.entries(d.refs)) {
+				if (!/^[a-z][a-z0-9-]*$/.test(ns)) err(`refs: namespace "${ns}" must be [a-z][a-z0-9-]*`)
+				if (v !== null && !isObj(v)) err(`refs.${ns} must be a mapping`)
+				else if (isObj(v) && v.url !== undefined && !String(v.url).includes('{id}')) err(`refs.${ns}.url needs {id}`)
+			}
+	}
 	for (const k of ['firewall'] as const) {
 		const v = d[k]
 		if (v !== undefined && (!Array.isArray(v) || v.some((x) => typeof x !== 'string'))) err(`${k} must be a list of strings`)
@@ -139,6 +159,24 @@ export function unitInfo(config: Pick<ContentConfig, 'units'>, name: string): Un
 
 export function compareUnits(a: UnitInfo, b: UnitInfo): number {
 	return a.sortKey[0] - b.sortKey[0] || a.sortKey[1] - b.sortKey[1] || (a.name < b.name ? -1 : a.name > b.name ? 1 : 0)
+}
+
+/** A unit's id: `units.id` filled from its name's pattern groups, else the name itself. */
+export function unitId(config: Pick<ContentConfig, 'units'>, name: string): string {
+	const tpl = config.units.id
+	if (!tpl) return name
+	for (const p of config.units.patterns ?? []) {
+		const g = new RegExp(p).exec(name)?.groups
+		if (!g) continue
+		let missing = false
+		const id = tpl.replace(/\{(\w+)\}/g, (_, k: string) => {
+			const v = g[k]
+			if (v === undefined) missing = true
+			return v ?? ''
+		})
+		return missing ? name : id
+	}
+	return name
 }
 
 /** Whether a source covers a unit's year (a source without `years` covers everything). */

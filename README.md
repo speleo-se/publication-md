@@ -16,7 +16,7 @@ This repo contains:
 | [`spec/content-repo.md`](spec/content-repo.md) | How a content repo is laid out and configured |
 | `lib/src/` | Reference library (TypeScript, no build step; Node ≥ 22.18 and Cloudflare Workers): parse, validate, split into articles, cut images out of PDFs |
 | `tools/` | Command-line tools: validate, extract images, statistics, fetch source PDFs, manage content repos |
-| `.claude/skills/` | [Claude Code](https://claude.com/claude-code) skills: `transcribe` (scan / born-digital PDF → proofread publication-md), `pdf-extract`, `pdf-fixer`, `content` |
+| `.claude/skills/` | [Claude Code](https://claude.com/claude-code) skills: `transcribe` (scan / born-digital PDF → proofread publication-md), `pdf-extract`, `content` |
 | `.devcontainer/` | A ready environment with Claude Code, the PDF/OCR toolchain and a default-deny firewall |
 | [`registry.yaml`](REGISTRY.md) | Known content repos using publication-md |
 
@@ -58,6 +58,7 @@ PMD_CONTENT=<name> npm run validate   # act on another repo for one command
 npm run fetch -- <unit>               # download a source PDF (per the repo's `sources`)
 npm run extract-images -- <unit>      # write <unit>-content/img/* from the PDF
 npm run stats                         # write the repo's STATS.md
+npm run refs                          # regenerate the repo's ref/ (reference targets + indexes)
 ```
 
 Every tool and skill resolves paths through `tools/workspace.ts`, so they always agree on which

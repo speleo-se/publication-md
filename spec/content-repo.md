@@ -17,6 +17,7 @@ publication-md.yaml          REQUIRED — this file's subject
   publication.md
   pageIndex-NNN.md …
 <unit>.pdf                   source PDFs — gitignored, fetched with `npm run fetch`
+ref/                         generated reference targets (§3.5 of the spec) — commit, never edit
 collections/<id>.yaml        shared container metadata (optional)
 people.yaml                  canonical person names (optional)
 rules/                       content-specific rules for the skills (optional, recommended)
@@ -24,6 +25,8 @@ README.md                    what the content is, who owns it, how to work on it
 ```
 
 The repo's `.gitignore` should contain `*.pdf` and `*-content/img/` (generated images).
+`ref/` is generated too but **committed**, so reference links work on GitHub; keep it current
+with `npm run refs` (`npm run refs -- --check` fails when it is stale — usable in CI).
 
 ## `publication-md.yaml`
 
@@ -38,7 +41,9 @@ The repo's `.gitignore` should contain `*.pdf` and `*-content/img/` (generated i
 | `language` | | BCP 47 language of the content (`sv`, `en`). Notes the skills write use it. |
 | `units.glob` | ✓ | Glob of unit names (folder name without `-content`), e.g. `SSF_Grottan_*_webb`. |
 | `units.patterns` | | Regexes (JavaScript syntax) with named groups `year`, `issue`, `volume`, tried in order; they drive sorting (year, first issue number, name), reports and source selection. |
+| `units.id` | | Template for each unit's id from the pattern groups, e.g. `grottan-{year}-{issue}`; lets references target units without a `publication.md`. With a units namespace `grottan`, the id must start with `grottan-`. |
 | `sources` | | Where the source PDFs live, tried in order (below). |
+| `refs` | | Reference namespaces (spec §3.5): `<ns>: {title, url?, units?}`. `units: true` = this repo's units (`grottan: {title: Grottan, units: true}` → `ref/grottan/1982-4.md` is unit `grottan-1982-4`); otherwise an entity namespace, `url` with `{id}` (e.g. `ssf: {title: "SSF:s riksnummer"}`). |
 | `rules` | | Folder of content-specific rules (default `rules`). |
 | `firewall` | | Hosts the devcontainer must allow for this content. |
 | `transcribe` | | Options for the transcription tooling: `noteLabel` (label of transcription notes), `alphabet` (extra letters of the language). |

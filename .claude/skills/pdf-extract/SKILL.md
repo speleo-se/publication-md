@@ -1,6 +1,6 @@
 ---
 name: pdf-extract
-description: Extract clean, proofread, correctly-ordered plain text from a PDF (scanned or born-digital), one markdown file per page. Unlike pdf-fixer it does NOT rebuild a PDF — the deliverable is a text-clean/ folder of pageIndex-NNN.md files. Each page is produced by a create subagent and checked by a review subagent (vision), and redone if the review score is too low. Use when the user wants the readable text of a PDF (e.g. to feed an LLM), not a cleaned PDF.
+description: Extract clean, proofread, correctly-ordered plain text from a PDF (scanned or born-digital), one markdown file per page. It does NOT rebuild a PDF — the deliverable is a text-clean/ folder of pageIndex-NNN.md files. Each page is produced by a create subagent and checked by a review subagent (vision), and redone if the review score is too low. Use when the user wants the readable text of a PDF (e.g. to feed an LLM), not a cleaned PDF.
 ---
 
 # /pdf-extract — extract clean, ordered per-page text from a PDF
@@ -12,7 +12,6 @@ and in correct human reading order** (columns flowed correctly, paragraphs in th
 right order, OCR noise removed). No PDF is created.
 
 `$ARGUMENTS` is the input PDF path or URL. Bundled scripts live in `scripts/`.
-Sibling skill: `pdf-fixer` (rebuilds a cleaned PDF) — this one only extracts text.
 
 ## Step 0 — preflight
 
