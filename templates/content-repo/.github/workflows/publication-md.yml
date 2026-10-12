@@ -1,0 +1,20 @@
+# Runs publication-md's shared workflow for this content repo: validates the content and keeps
+# the generated ref/ and STATS.md current (committed back on pushes to main).
+# All logic lives in https://github.com/speleo-se/publication-md (.github/workflows/content.yml).
+# Pin `uses:` and `publication-md-ref` to the same tag (e.g. v1) once publication-md is tagged.
+name: publication-md
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  content:
+    uses: speleo-se/publication-md/.github/workflows/content.yml@main
+    with:
+      publication-md-ref: main

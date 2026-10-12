@@ -6,15 +6,29 @@
  *   node tools/content.ts list
  *   node tools/content.ts use <name>
  *   node tools/content.ts remove <name>      unlinks a symlink; a clone is left for you to delete
+ *   node tools/content.ts init <dir> --name <name> [--title …] [--owner …] [--language sv]
+ *                                            [--license …] [--note-label …]
+ *                                            create a new, fully set-up content repo and add it
  *
  * `add` checks the repo's publication-md.yaml, makes it the active repo, and reports anything
  * the environment needs for it (firewall domains for the devcontainer).
  */
 import { spawnSync } from 'node:child_process'
-import { existsSync, lstatSync, mkdirSync, readFileSync, readlinkSync, symlinkSync, unlinkSync, writeFileSync } from 'node:fs'
-import { basename, join, resolve } from 'node:path'
+import {
+	existsSync,
+	lstatSync,
+	mkdirSync,
+	readdirSync,
+	readFileSync,
+	readlinkSync,
+	statSync,
+	symlinkSync,
+	unlinkSync,
+	writeFileSync,
+} from 'node:fs'
+import { basename, dirname, join, relative, resolve } from 'node:path'
 import { parseContentConfig } from '../lib/src/index.ts'
-import { activeName, CONTENT_DIR, listContent, WORK_DIR } from './workspace.ts'
+import { activeName, CONTENT_DIR, listContent, ROOT, WORK_DIR } from './workspace.ts'
 
 const ACTIVE = join(CONTENT_DIR, '.active')
 const [cmd, ...rest] = process.argv.slice(2)
@@ -113,6 +127,51 @@ switch (cmd) {
 		console.log(`unlinked content/${n} (the repo itself is untouched)`)
 		break
 	}
+	case 'init': {
+		const name = flag('--name') ?? die('usage: content init <dir> --name <name> [--title …] [--owner …] [--language sv]')
+		if (!/^[a-z0-9][a-z0-9._-]*$/.test(name)) die('--name must be [a-z0-9._-] (lower case)')
+		const title = flag('--title') ?? name
+		const owner = flag('--owner') ?? 'TODO: owner'
+		const language = flag('--language') ?? 'en'
+		const license = flag('--license') ?? 'TODO: licence or terms of use of the content.'
+		const noteLabel = flag('--note-label') ?? (language === 'sv' ? 'Transkriberingsnot' : 'Transcription note')
+		const dir = resolve(rest[0] ?? die('usage: content init <dir> --name <name> …'))
+		if (existsSync(dir) && readdirSync(dir).length) die(`${dir} exists and is not empty`)
+		const values: Record<string, string> = { name, title, owner, language, license, noteLabel, copyright: `© ${owner}` }
+		const fill = (text: string, yaml: boolean) =>
+			text.replace(/\{\{(\w+)\}\}/g, (m, k: string) => {
+				const v = values[k]
+				if (v === undefined) return m
+				// In YAML, free-text values are quoted; name/language are path-safe tokens.
+				return yaml && !['name', 'language'].includes(k) ? JSON.stringify(v) : v
+			})
+		const tpl = join(ROOT, 'templates', 'content-repo')
+		const walk = (d: string): string[] =>
+			readdirSync(d).flatMap((e) => (statSync(join(d, e)).isDirectory() ? walk(join(d, e)) : [join(d, e)]))
+		for (const src of walk(tpl)) {
+			const rel = relative(tpl, src).replaceAll('{{name}}', name)
+			const dest = join(dir, rel)
+			mkdirSync(dirname(dest), { recursive: true })
+			writeFileSync(dest, fill(readFileSync(src, 'utf8'), /\.ya?ml$/.test(src) && !rel.startsWith('.github')))
+			console.log(`  + ${rel}`)
+		}
+		const { problems } = parseContentConfig(readFileSync(join(dir, 'publication-md.yaml'), 'utf8'))
+		if (problems.length) die(`template produced an invalid publication-md.yaml:\n${problems.map((p) => `  ${p.message}`).join('\n')}`)
+		console.log(`$ git init -b main ${dir}`)
+		spawnSync('git', ['init', '-q', '-b', 'main', dir], { stdio: 'inherit' })
+		const link = join(CONTENT_DIR, name)
+		if (existsSync(link)) die(`content/${name} already exists — created ${dir} but did not link it`)
+		symlinkSync(dir, link)
+		writeFileSync(ACTIVE, `${name}\n`)
+		mkdirSync(join(WORK_DIR, name), { recursive: true })
+		console.log(`\ncreated ${dir} and linked content/${name} (active)`)
+		console.log(`Next:
+  1. Edit ${join(dir, 'publication-md.yaml')}: units.glob/patterns, sources, owner/licence.
+  2. Fill in ${join(dir, 'rules/transcribe.md')}.
+  3. Create the GitHub repo, then: git -C ${dir} add -A && git -C ${dir} commit -m "Initial content repo" && git -C ${dir} push
+  4. Optional: add it to registry.yaml in publication-md (pull request).`)
+		break
+	}
 	default:
-		die('usage: content add|list|use|remove …  (see tools/content.ts)')
+		die('usage: content add|list|use|remove|init …  (see tools/content.ts)')
 }

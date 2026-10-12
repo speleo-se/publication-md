@@ -64,6 +64,23 @@ sources:
 sources use the [gdrive CLI](https://github.com/glotlabs/gdrive) with the user's own account,
 so private folders work for whoever has been given access.
 
+## Automation (GitHub Actions)
+
+A content repo needs no tooling of its own: `.github/workflows/publication-md.yml` (written by
+`npm run content -- init`) calls publication-md's reusable workflow,
+
+```yaml
+permissions: { contents: write }
+jobs:
+  content:
+    uses: speleo-se/publication-md/.github/workflows/content.yml@v1
+    with: { publication-md-ref: v1 }
+```
+
+which validates every push and pull request (errors fail the run) and, on pushes to the default
+branch, regenerates `ref/` and `STATS.md` and commits them back. Pin both to the same
+publication-md tag; use `main` until one exists.
+
 ## Content-specific rules
 
 Files in `rules/` extend the generic skills; the skills read them all and **the content rules

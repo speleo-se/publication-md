@@ -1,0 +1,95 @@
+# Reusable workflow for publication-md CONTENT repos. A content repo calls it with a few lines
+# (see templates/content-repo/.github/workflows/publication-md.yml):
+#
+#   jobs:
+#     content:
+#       uses: speleo-se/publication-md/.github/workflows/content.yml@v1
+#       with: { publication-md-ref: v1 }
+#
+# What it does, with the publication-md tools at `publication-md-ref`:
+#   every run     validate the content (errors fail the run)
+#   push to main  regenerate ref/ and STATS.md and commit them back (caller needs
+#                 `permissions: contents: write`); a commit made with GITHUB_TOKEN does not
+#                 trigger another run, so there is no loop
+#   pull request  check that ref/ is current instead of committing
+name: publication-md content
+
+on:
+  workflow_call:
+    inputs:
+      publication-md-ref:
+        description: Branch or tag of speleo-se/publication-md to run (pin the same tag as `uses:`)
+        type: string
+        default: main
+      publication-md-repository:
+        description: Where publication-md lives (for forks)
+        type: string
+        default: speleo-se/publication-md
+      commit-generated:
+        description: Commit regenerated ref/ and STATS.md on pushes to the default branch
+        type: boolean
+        default: true
+
+jobs:
+  content:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    concurrency:
+      group: publication-md-${{ github.repository }}-${{ github.ref }}
+      cancel-in-progress: false
+    env:
+      PMD_CONTENT_ROOT: ${{ github.workspace }}/content
+    steps:
+      - name: Check out the content repo
+        uses: actions/checkout@v4
+        with:
+          path: content
+      - name: Check out publication-md
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ inputs.publication-md-repository }}
+          ref: ${{ inputs.publication-md-ref }}
+          path: pmd
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: pmd/package-lock.json
+      - name: Install publication-md
+        working-directory: pmd
+        run: npm ci
+
+      - name: Validate
+        working-directory: pmd
+        run: node tools/validate.ts --errors-only
+
+      - name: Check generated files (pull requests)
+        if: github.event_name == 'pull_request'
+        working-directory: pmd
+        run: node tools/refs.ts --check
+
+      - name: Regenerate ref/ and STATS.md
+        if: github.event_name != 'pull_request'
+        working-directory: pmd
+        run: |
+          node tools/refs.ts
+          node tools/stats.ts
+
+      - name: Commit generated files
+        if: >-
+          github.event_name != 'pull_request' && inputs.commit-generated &&
+          github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
+        working-directory: content
+        run: |
+          # A STATS.md whose only change is its "Generated <date>" line is not worth a commit.
+          if git diff --quiet -I '^(Genererad|Generated) ' -- STATS.md; then git checkout -- STATS.md 2>/dev/null || true; fi
+          git add -A ref STATS.md
+          if git diff --cached --quiet; then
+            echo "Generated files are current."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "Regenerate ref/ and STATS.md (publication-md ${{ inputs.publication-md-ref }})"
+          git push

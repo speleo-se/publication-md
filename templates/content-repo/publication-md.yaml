@@ -1,0 +1,37 @@
+# publication-md content repo configuration — see publication-md/spec/content-repo.md
+config: publication-md-content/1
+name: {{name}}
+title: {{title}}
+shortTitle: {{title}}
+owner: {{owner}}
+copyright: {{copyright}}
+license: {{license}}
+language: {{language}}
+
+units:
+  # Folder names of the units, without the -content suffix. Adjust to your naming.
+  glob: "{{name}}_*"
+  # Named groups year / issue / volume drive sorting, reports, ids and source selection.
+  patterns:
+    - '^{{name}}_(?<year>\d{4})[_-](?<issue>[\d-]+)$'
+  # Each unit's id; references to units use ../ref/{{name}}/<year>-<issue>.md
+  id: "{{name}}-{year}-{issue}"
+
+# Where the source PDFs live (gitignored here). Fetch with: npm run fetch -- <unit>
+sources: []
+#  - {type: gdrive, folder: <Google Drive folder id>, years: 1990-}
+#  - {type: http, base: "https://example.org/pdfs"}
+
+# Reference namespaces: this repo's own units, plus entity namespaces you link to.
+refs:
+  {{name}}: {title: {{title}}, units: true}
+#  wikidata: {title: Wikidata, url: "https://www.wikidata.org/wiki/{id}"}
+
+# Content-specific rules for the publication-md skills
+rules: rules
+
+# Hosts the devcontainer firewall must allow for this content
+firewall: []
+
+transcribe:
+  noteLabel: {{noteLabel}}

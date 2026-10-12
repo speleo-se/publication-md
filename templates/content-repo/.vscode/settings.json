@@ -1,0 +1,14 @@
+{
+	// Colour the Activity Bar so this content repo's window is easy to tell apart.
+	"workbench.colorCustomizations": {
+		"activityBar.background": "#1F6FB2",
+		"activityBar.foreground": "#ffffff",
+		"activityBar.inactiveForeground": "#ffffffb0",
+		"activityBarBadge.background": "#0F3F66",
+		"activityBarBadge.foreground": "#ffffff"
+	},
+	"workbench.editorAssociations": {
+		"*.md": "vscode.markdown.preview.editor",
+		"git:/**/*.md": "default"
+	}
+}

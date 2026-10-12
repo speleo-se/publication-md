@@ -1,0 +1,7 @@
+# Shared metadata for {{title}}; units refer to it with container: {type: periodical, id: {{name}}}
+type: periodical
+id: {{name}}
+title: {{title}}
+publisher: {{owner}}
+language: {{language}}
+# issn:

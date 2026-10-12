@@ -17,6 +17,8 @@ This repo contains:
 | `lib/src/` | Reference library (TypeScript, no build step; Node ≥ 22.18 and Cloudflare Workers): parse, validate, split into articles, cut images out of PDFs |
 | `tools/` | Command-line tools: validate, extract images, statistics, fetch source PDFs, manage content repos |
 | `.claude/skills/` | [Claude Code](https://claude.com/claude-code) skills: `transcribe` (scan / born-digital PDF → proofread publication-md), `pdf-extract`, `content` |
+| `templates/content-repo/` | What `npm run content -- init` writes for a new content repo |
+| `.github/workflows/content.yml` | Reusable GitHub Action for content repos: validate, regenerate `ref/` + `STATS.md` |
 | `.devcontainer/` | A ready environment with Claude Code, the PDF/OCR toolchain and a default-deny firewall |
 | [`registry.yaml`](REGISTRY.md) | Known content repos using publication-md |
 
@@ -74,9 +76,11 @@ Generic improvements belong here; corpus quirks belong in the content repo. See
 
 ## Using it for your own publications
 
-1. Create a repo with a `publication-md.yaml` (see [spec/content-repo.md](spec/content-repo.md))
-   and your unit folders — or let the `transcribe` skill create them from your PDFs.
-2. Add it to your workspace with `npm run content -- add …`.
+1. Create a fully set-up content repo (config, README, rules stub, GitHub Action, …):
+   `npm run content -- init <dir> --name <name> --title "<title>" --owner "<owner>" --language <lang>`
+   — or ask Claude to "create a new content repo". It is linked into your workspace right away.
+2. Adjust its `publication-md.yaml` to your file naming and sources
+   ([spec/content-repo.md](spec/content-repo.md)), push it to GitHub, and add PDFs.
 3. If you like, list it in [`registry.yaml`](registry.yaml) with a pull request (private repos
    are welcome; say how access is obtained).
 

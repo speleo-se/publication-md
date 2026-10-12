@@ -1,0 +1,5 @@
+# Source PDFs — fetched with `npm run fetch -- <unit>` in publication-md
+*.pdf
+
+# Extracted images — regenerate with `npm run extract-images -- <unit>` in publication-md
+*-content/img/

@@ -1,6 +1,6 @@
 ---
 name: content
-description: Manage the content repos of this publication-md workspace — add one (clone a git URL or link a local checkout), list them, switch the active one, fetch a unit's source PDF, or show which repo/paths the tools act on. Use when the user says "add repo …", "use <name>", "which content is active", "fetch the PDF for …", or wants to start working on a content repo.
+description: Manage the content repos of this publication-md workspace — create a new one (fully set up), add one (clone a git URL or link a local checkout), list them, switch the active one, fetch a unit's source PDF, or show which repo/paths the tools act on. Use when the user says "add repo …", "use <name>", "which content is active", "fetch the PDF for …", or wants to start working on a content repo.
 ---
 
 # /content — the content repos of this workspace
@@ -27,6 +27,22 @@ yourself).
 
 Known repos are listed in `registry.yaml` — offer them when the user asks what exists. Some are
 private; access is granted by their owner, not by publication-md.
+
+## Create a new content repo
+
+Ask the user for: the short **name** (`[a-z0-9._-]`, also the reference namespace), the
+**title**, the **owner** (who holds the copyright), the **language** of the content (BCP 47,
+e.g. `sv`), and where the new repo should live (a directory outside publication-md). Then:
+
+```bash
+npm run content -- init <dir> --name <name> --title "<title>" --owner "<owner>" --language <lang> [--license "<terms>"]
+```
+
+It writes publication-md.yaml, README, .gitignore, rules/transcribe.md (a stub to fill in),
+people.yaml, collections/<name>.yaml, the GitHub Action caller and VS Code settings; runs
+`git init`; and links it as the active repo. Then help the user adjust `units.glob`/`patterns`
+to their file naming, add `sources`, fill in `rules/transcribe.md`, create the GitHub repo and
+push (they commit — show the commands), and optionally add it to `registry.yaml`.
 
 ## Then, before transcribing
 
