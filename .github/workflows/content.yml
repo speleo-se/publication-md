@@ -69,6 +69,10 @@ jobs:
         working-directory: pmd
         run: node tools/validate.ts --errors-only
 
+      - name: Entity links agree with the names files
+        working-directory: pmd
+        run: node tools/refs.ts names
+
       - name: Check generated files (pull requests)
         if: github.event_name == 'pull_request'
         working-directory: pmd

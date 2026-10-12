@@ -7,6 +7,7 @@
  *
  *   node tools/refs.ts            # rewrite <content>/ref/ (generated — commit it, never edit it)
  *   node tools/refs.ts --check    # exit 1 if ref/ is missing, stale or has extra files
+ *   node tools/refs.ts names [--apply]   # check entity links against the names files (tools/names.ts)
  */
 import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { dirname, join, relative } from 'node:path'
@@ -15,6 +16,10 @@ import { readCorpus, workspaceFromArgs } from './units.ts'
 
 const argv = process.argv.slice(2)
 const ws = workspaceFromArgs(argv)
+if (argv[0] === 'names') {
+	const { runNames } = await import('./names.ts')
+	process.exit(runNames(ws, argv.slice(1)))
+}
 const check = argv.includes('--check')
 const SV = ws.config.language === 'sv'
 const T = SV
@@ -74,13 +79,25 @@ for (const e of [...refs.values()].sort((a, b) => refPath(a.target).localeCompar
 	files.set(path, `${out.join('\n').trimEnd()}\n`)
 }
 
+// ref/review-<ns>.md — worksheets for entity names that still need a human decision.
+{
+	const { reviewFiles } = await import('./names.ts')
+	for (const [p, c] of reviewFiles(ws)) files.set(p, c)
+}
+
 // ref/README.md — says the folder is generated, so nobody edits it by hand.
 {
 	const counts = new Map<string, number>()
+	const reviews = [...files.keys()].filter((p) => /^ref\/review-[^/]+\.md$/.test(p))
 	for (const path of files.keys()) {
-		const ns = path.split('/')[1] ?? ''
+		const parts = path.split('/')
+		if (parts.length < 3) continue // ref/README.md, ref/review-*.md are not namespaces
+		const ns = parts[1] ?? ''
 		counts.set(ns, (counts.get(ns) ?? 0) + 1)
 	}
+	const reviewLine = reviews.length
+		? [SV ? `**Att granska:** ${reviews.map((p) => `[${p.slice(4)}](${p.slice(4)})`).join(', ')} — beslut om namn som behöver en människa.` : `**To review:** ${reviews.map((p) => `[${p.slice(4)}](${p.slice(4)})`).join(', ')} — name decisions that need a human.`, '']
+		: []
 	const rows = [...counts].sort().map(([ns, n]) => `| [\`${ns}/\`](${ns}/) | ${ws.config.refs?.[ns]?.title ?? ns} | ${n} |`)
 	const readme = SV
 		? [
@@ -98,6 +115,7 @@ for (const e of [...refs.values()].sort((a, b) => refPath(a.target).localeCompar
 				'har det som ämne. Ändra länkarna i sidfilerna — inte filerna här. Formatet beskrivs i',
 				'publication-md:s spec, §3.5.',
 				'',
+				...reviewLine,
 				'| Mapp | Namnrymd | Filer |',
 				'|---|---|--:|',
 				...rows,
@@ -117,6 +135,7 @@ for (const e of [...refs.values()].sort((a, b) => refPath(a.target).localeCompar
 				'as a subject. Change the links in the page files — not the files here. See the publication-md',
 				'spec, §3.5.',
 				'',
+				...reviewLine,
 				'| Folder | Namespace | Files |',
 				'|---|---|--:|',
 				...rows,

@@ -52,3 +52,12 @@ export {
 	upgradeFiles,
 	versionOf,
 } from './migrations.ts'
+export {
+	applyNames,
+	checkNames,
+	type NameEntry,
+	type NameIndex,
+	type NameMismatch,
+	nameKey,
+	parseNames,
+} from './names.ts'

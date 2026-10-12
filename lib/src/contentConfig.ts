@@ -61,12 +61,30 @@ export interface ContentConfig {
 	 * this repo's own (`ref/grottan/1982-4.md` ↔ unit id `grottan-1982-4`); the others are entity
 	 * namespaces (`ref/ssf/933.md`), optionally with a URL template (`{id}`) to the authority.
 	 */
-	refs?: Record<string, { title?: string; url?: string; units?: boolean }>
+	refs?: Record<
+		string,
+		{
+			title?: string
+			url?: string
+			units?: boolean
+			/** Names file: shared printed-name → id decisions (`npm run refs -- names`). */
+			names?: string
+			/** Register file (YAML list with `id` or `riksnr` + facts) shown in the review worksheet. */
+			register?: string
+			/** Page URL template with `{path}` from the register, e.g. "https://grottor.se/{path}". */
+			pageUrl?: string
+		}
+	>
 	/**
 	 * Google OAuth client ("Desktop app") for gdrive sources: users log in with
 	 * `npm run fetch -- login`. A desktop client's secret is not confidential and may be committed.
 	 */
 	google?: { clientId: string; clientSecret?: string }
+	/**
+	 * MCP servers that help work on this content (e.g. an authority's cave database), suggested to
+	 * the user by `content add`: `claude mcp add --transport http <name> <url>`.
+	 */
+	mcp?: { name: string; url: string; purpose?: string }[]
 	/** Options for the transcription tooling, e.g. `noteLabel`, `alphabet`. */
 	transcribe?: Record<string, unknown>
 	[key: string]: unknown
@@ -141,6 +159,11 @@ export function parseContentConfig(text: string): { config: ContentConfig | null
 		if (!isObj(g) || typeof g.clientId !== 'string' || !g.clientId.endsWith('.apps.googleusercontent.com')) {
 			err('google.clientId must be an OAuth client id (….apps.googleusercontent.com)')
 		} else if (g.clientSecret !== undefined && typeof g.clientSecret !== 'string') err('google.clientSecret must be a string')
+	}
+	if (d.mcp !== undefined) {
+		if (!Array.isArray(d.mcp) || d.mcp.some((m) => !isObj(m) || typeof m.name !== 'string' || typeof m.url !== 'string' || !/^https:\/\//.test(m.url))) {
+			err('mcp must be a list of {name, url: https://…, purpose?}')
+		}
 	}
 	if (d.refs !== undefined) {
 		if (!isObj(d.refs)) err('refs must map namespace → {title, url}')

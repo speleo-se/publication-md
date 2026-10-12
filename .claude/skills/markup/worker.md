@@ -67,6 +67,25 @@ Never let extract.sh overwrite an existing `text-clean/` — check it first; if 
    `[Grottan nr 4, 1982](../ref/grottan/1982-4.md)`, a page `…/1986-4/p22.md`, caves
    `../ref/ssf/933.md`. Never guess an id: ambiguous or unknown → `../ref/<ns>/unknown.md`. Add
    `subjects: [ssf/…]` to a part/figure only when it is clearly *about* that entity.
+   - **Names files are binding.** If the namespace has a names file (`refs.<ns>.names` in
+     publication-md.yaml, e.g. Grottan's `data/cave-names.yaml`), look every printed name up there
+     FIRST (case-insensitive; spelling variants and inflections are listed as `printed` forms):
+     `id: N` → link N; `id: unknown` → `unknown.md`; `candidates` → pick one of them from context
+     (the `hint`), else `unknown.md`. Never link against an entry — if one looks wrong, keep it and
+     say so in your reply.
+   - **Evidence, not name matching.** A same-named register entry is not proof: compare the
+     article's region with the cave's landskap/kommun/socken and its alternative names (`also`), and
+     use the content repo's MCP server when it is connected (`mcp:` in publication-md.yaml — e.g.
+     Speleotastic `search` with an area filter, `get-cave` for areas, alternate names and location).
+     A named part of a cave links to the whole cave, and not at all if that cave is already linked
+     earlier in the same article. When the evidence is thin: `unknown` (or `candidates`) and say why.
+   - **Only names go in the names file.** A descriptive phrase ("en grotta", "grottan", "a cave on the
+     island") may be linked in place when the context identifies the cave, but never becomes a fixed
+     entry — at most `candidates` with a hint.
+   - **A new name** (not in the file): decide from the register + context, then APPEND an entry
+     (`printed: [<form as printed>, <inflected forms you met>]` + `id` or `candidates`+`hint`), so the
+     next unit links it the same way.
+   - Before replying: `npm run refs -- names` must say all entity links agree.
 9. **People.** Add every new person name you used to the content repo's `people.yaml` (canonical
    "First Last"; printed variants as `aliases`).
 10. **Check and publish.**

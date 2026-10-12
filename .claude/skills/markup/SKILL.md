@@ -25,7 +25,9 @@ Show the user every command you run.
    > deliverable: `<CONTENT>/<UNIT>-content`; run commands from the publication-md root
    > (`<ROOT>`). Do this one unit only. Reply in ≤ 15 lines as worker.md step 11 says.
 3. **Verify** (cheap, here): `markup.py <unit>` shows MARKED (or BLOCKED);
-   `npm run validate -- <unit>` → 0 errors; `npm run refs -- --check` → current.
+   `npm run validate -- <unit>` → 0 errors; `npm run refs -- --check` → current;
+   `npm run refs -- names` → all entity links agree with the names files (a disagreement from an
+   earlier unit is fixed with `npm run refs -- names --apply`; a wrong candidate needs a worker).
    If the worker said MARKED but a check fails, or it replied INCOMPLETE (e.g. it ran out of room),
    dispatch ONE more worker for the same unit with its reply as context — it resumes (worker.md,
    "Resuming"). At most two workers per unit; then block it with the reason.

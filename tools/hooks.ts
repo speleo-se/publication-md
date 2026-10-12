@@ -65,6 +65,11 @@ switch (hook) {
 			process.stderr.write(r.stdout)
 			fail('ref/ is out of date — run `npm run refs` in publication-md and commit the result')
 		}
+		const n = tool('refs.ts', 'names')
+		if (n.status !== 0) {
+			process.stderr.write(n.stdout)
+			fail('entity links disagree with the names files — `npm run refs -- names --apply` (fixed ids) or fix by hand')
+		}
 		break
 	}
 	default:

@@ -125,6 +125,10 @@ switch (cmd) {
 		console.log(`active: ${basename(dir)} — ${cfg.title ?? cfg.name}${cfg.owner ? ` (${cfg.owner})` : ''}`)
 		if (cfg.copyright) console.log(`copyright: ${cfg.copyright}`)
 		if (cfg.license) console.log(`license: ${cfg.license}`)
+		for (const m of cfg.mcp ?? []) {
+			console.log(`\nRecommended MCP server${m.purpose ? ` (${m.purpose})` : ''} — add it once, then log in via /mcp:`)
+			console.log(`  claude mcp add --transport http ${m.name} ${m.url}`)
+		}
 		console.log('\nNext: npm run validate   ·   npm run fetch -- <unit>   ·   ask Claude to transcribe the next unit')
 		break
 	}

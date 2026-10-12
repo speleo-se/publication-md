@@ -48,7 +48,7 @@ machine writes the same file.
 | `units.id` | | Template for each unit's id from the pattern groups, e.g. `grottan-{year}-{issue}`; lets references target units without a `publication.md`. With a units namespace `grottan`, the id must start with `grottan-`. |
 | `sources` | | Where the source PDFs live, tried in order (below). |
 | `google` | | Google OAuth client for Drive sources: `{clientId, clientSecret}` of a *Desktop app* client (below). |
-| `refs` | | Reference namespaces (spec §3.5): `<ns>: {title, url?, units?}`. `units: true` = this repo's units (`grottan: {title: Grottan, units: true}` → `ref/grottan/1982-4.md` is unit `grottan-1982-4`); otherwise an entity namespace, `url` with `{id}` (e.g. `ssf: {title: "SSF:s riksnummer"}`). |
+| `refs` | | Reference namespaces (spec §3.5): `<ns>: {title, url?, units?, names?}` — `names` is a file of shared name → id decisions (`npm run refs -- names`). `units: true` = this repo's units (`grottan: {title: Grottan, units: true}` → `ref/grottan/1982-4.md` is unit `grottan-1982-4`); otherwise an entity namespace, `url` with `{id}` (e.g. `ssf: {title: "SSF:s riksnummer"}`). |
 | `rules` | | Folder of content-specific rules (default `rules`). |
 | `transcribe` | | Options for the transcription tooling: `noteLabel` (label of transcription notes), `alphabet` (extra letters of the language). |
 
