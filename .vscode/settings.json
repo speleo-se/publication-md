@@ -8,6 +8,12 @@
 		"activityBarBadge.background": "#6E1510",
 		"activityBarBadge.foreground": "#ffffff"
 	},
+	// Show the content repos under content/<name> as their own repositories in Source Control.
+	// They sit two levels down (and are gitignored here), beyond VS Code's default scan depth of 1.
+	"git.autoRepositoryDetection": true,
+	"git.repositoryScanMaxDepth": 2,
+	// work/ holds render trees (page images), never a repo — don't spend time scanning it.
+	"git.repositoryScanIgnoredFolders": ["node_modules", "work"],
 	"workbench.editorAssociations": {
 		"*.md": "vscode.markdown.preview.editor",
 		"git:/**/*.md": "default"
