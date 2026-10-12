@@ -9,8 +9,9 @@ describe('ref paths', () => {
 	it('parses and round-trips every target kind', () => {
 		const cases: [string, string][] = [
 			['../ref/grottan/1982-4.md', 'grottan-1982-4'],
-			['../ref/grottan/1986-4/p22.md', 'grottan-1986-4@22'],
-			['../ref/grottan/1987-2/1987-2~4-9~1.md', 'grottan-1987-2#1987-2|4-9|1'],
+			['../ref/grottan/1986-4/page/22.md', 'grottan-1986-4@22'],
+			['../ref/grottan/1987-2/part/4-9~1.md', 'grottan-1987-2#1987-2|4-9|1'],
+			['../ref/grottan/1987-2/figure/1~f1.md', 'grottan-1987-2#1987-2|1|f1'],
 			['../ref/ssf/933.md', 'ssf:933'],
 			['../ref/ssf/unknown.md', 'ssf:?'],
 		]
@@ -22,6 +23,9 @@ describe('ref paths', () => {
 		expect(parseRef('https://example.org/x.md', NS)).toBeNull()
 		expect(parseRef('../ref/other/1.md', NS)).toBeNull() // undeclared namespace
 		expect(parseRef('../ref/ssf/933/x.md', NS)).toBeNull() // entities have no sub-targets
+		expect(parseRef('../ref/grottan/1986-4/p22.md', NS)).toBeNull() // old one-letter page form
+		expect(parseRef('../ref/grottan/1987-2/part/1~f1.md', NS)).toBeNull() // figure key under part/
+		expect(parseRef('../ref/grottan/1987-2/figure/4-9~1.md', NS)).toBeNull() // part key under figure/
 		expect(parseSubject('ssf/933', NS)).toEqual({ kind: 'entity', ns: 'ssf', id: '933' })
 	})
 	it('finds links but not images', () => {
@@ -54,14 +58,14 @@ refs:
 				publication: '---\nformat: publication-md/0.1\nid: t-1987-1\ntype: periodical\npageSequence: "1,2|3"\n---\n',
 				pages: [
 					{ name: 'pageIndex-000.md', text: '<!-- part: {key: "1987-1|1|1", type: chapter} -->\nEtt.' },
-					{ name: 'pageIndex-001.md', text: '<!-- page: 2 -->\nTvå <!-- page: 3 --> tre [där](../ref/t/1987-2/p2.md).' },
+					{ name: 'pageIndex-001.md', text: '<!-- page: 2 -->\nTvå <!-- page: 3 --> tre [där](../ref/t/1987-2/page/2.md).' },
 				],
 			},
 			{
 				folder: 'T_1987_2-content',
 				pages: [
-					{ name: 'pageIndex-000.md', text: 'Se [s. 3](../ref/t/1987-1/p3.md), [artikeln](../ref/t/1987-1/1987-1~1~1.md) och [Grottan](../ref/ssf/933.md).' },
-					{ name: 'pageIndex-001.md', text: '![x](img/p001_pct-0,0,10,10.jpg)\n<!-- figure: {key: "1987-2|2|1", subjects: [ssf/933]} -->\n[fel](../ref/t/1999-9.md) [okänd](../ref/ssf/unknown.md) [sida](../ref/t/1987-1/p9.md) [ns](../ref/nope/1.md)' },
+					{ name: 'pageIndex-000.md', text: 'Se [s. 3](../ref/t/1987-1/page/3.md), [artikeln](../ref/t/1987-1/part/1~1.md) och [Grottan](../ref/ssf/933.md).' },
+					{ name: 'pageIndex-001.md', text: '![x](img/p001_pct-0,0,10,10.jpg)\n<!-- figure: {key: "1987-2|2|f1", subjects: [ssf/933]} -->\n[fel](../ref/t/1999-9.md) [okänd](../ref/ssf/unknown.md) [sida](../ref/t/1987-1/page/9.md) [ns](../ref/nope/1.md)' },
 				],
 			},
 		],
@@ -82,7 +86,7 @@ refs:
 	it('reports unknown units and labels', () => {
 		expect(problems.map((p) => p.message)).toEqual([
 			'../ref/t/1999-9.md: no unit "t-1999-9" in this repo',
-			'../ref/t/1987-1/p9.md: unit t-1987-1 has no printed page "9"',
+			'../ref/t/1987-1/page/9.md: unit t-1987-1 has no printed page "9"',
 			'../ref/nope/1.md: namespace "nope" is not declared under refs: in publication-md.yaml',
 		])
 	})

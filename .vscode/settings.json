@@ -14,6 +14,18 @@
 	"git.repositoryScanMaxDepth": 2,
 	// work/ holds render trees (page images), never a repo — don't spend time scanning it.
 	"git.repositoryScanIgnoredFolders": ["node_modules", "work"],
+	// Search the content repos too: content/* is gitignored here, and search honours .gitignore by
+	// default. So ignore files are off for search, and the excludes below replace them.
+	"search.useIgnoreFiles": false,
+	"search.exclude": {
+		"**/node_modules": true,
+		"**/.git": true,
+		"work": true,
+		"**/*.pdf": true,
+		"content/*/*-content/img": true,
+		"content/*/tmp": true,
+		"**/__pycache__": true
+	},
 	"workbench.editorAssociations": {
 		"*.md": "vscode.markdown.preview.editor",
 		"git:/**/*.md": "default"

@@ -67,7 +67,8 @@ for (const e of [...refs.values()].sort((a, b) => refPath(a.target).localeCompar
 		}
 		if (t.kind === 'key') {
 			target = u.keys.get(t.key)
-			title += ` — ${t.key}`
+			const named = u.keyTitles.get(t.key)
+			title += ` — ${named ? `${named} (${t.key})` : t.key}`
 		}
 		out.push(`# ${title}`, '')
 		if (target) out.push(`→ ${T.go} [${title}](${fileLink(path, u, target)})${note}`, '')

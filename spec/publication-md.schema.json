@@ -101,7 +101,8 @@
 				"key": {
 					"type": "string",
 					"minLength": 1,
-					"description": "Stable identity <unit>|<printed page(s)>|<n>, kept when the region is re-cropped."
+					"pattern": "\\|f[0-9]+$",
+					"description": "Stable identity <unit>|<printed page(s)>|f<n>, kept when the region is re-cropped."
 				},
 				"kind": { "type": "string" },
 				"caption": { "type": "string" },

@@ -23,7 +23,7 @@ const PAGE = `<!-- page: 6 -->
 
 Text.
 ![Omslagsbild](img/p003_pct-8,31,84,43.jpg)
-<!-- figure: {key: "2007-1|6|1", kind: photo, creators: [{name: Anna Svensson, role: photographer}]} -->
+<!-- figure: {key: "2007-1|6|f1", kind: photo, creators: [{name: Anna Svensson, role: photographer}]} -->
 
 <!-- note: {type: transcription, text: "Tabellen är i två spalter i trycket."} -->
 
@@ -166,12 +166,16 @@ describe('pageSequence', () => {
 	})
 	it('warns when a part/figure key names pages outside the sequence', () => {
 		const u = unit('1-4', [
-			'<!-- part: {key: "x|2-3|1", type: chapter} -->\n![a](img/p000_pct-0,0,10,10.jpg)\n<!-- figure: {key: "x|9|1"} -->',
+			'<!-- part: {key: "x|2-3|1", type: chapter} -->\n![a](img/p000_pct-0,0,10,10.jpg)\n<!-- figure: {key: "x|9|f1"} -->',
 			'',
 			'',
 			'',
 		])
-		expect(msgs(u)).toEqual(['pageIndex-000.md: figure.key "x|9|1": pages "9" not in pageSequence'])
+		expect(msgs(u)).toEqual(['pageIndex-000.md: figure.key "x|9|f1": pages "9" not in pageSequence'])
+	})
+	it('rejects a figure key without the f series', () => {
+		const u = unit('1', ['![a](img/p000_pct-0,0,10,10.jpg)\n<!-- figure: {key: "x|1|1"} -->'])
+		expect(msgs(u)).toEqual(['pageIndex-000.md: figure.key "x|1|1": must end in |f<n> (e.g. "1987-2|16|f1")'])
 	})
 	it('resolves part.pages through the sequence', () => {
 		const ok = unit('1-4', ['<!-- part: {key: k, type: chapter, pages: 2-3} -->', '', '', ''])

@@ -47,14 +47,14 @@ Never let extract.sh overwrite an existing `text-clean/` — check it first; if 
    cover) becomes
    ```
    ![<the description, brackets removed>](img/pNNN_pct-x,y,w,h.jpg)
-   <!-- figure: {key: "<unit key>|<printed page>|<n>", kind: photo|map|survey|drawing|illustration|cover|diagram, caption: "…", creators: [{name: …, role: photographer}]} -->
+   <!-- figure: {key: "<unit key>|<printed page>|f<n>", kind: photo|map|survey|drawing|illustration|cover|diagram, caption: "…", creators: [{name: …, role: photographer}]} -->
    ```
    - Region: `python3 .claude/skills/markup/scripts/grid.py <page-NN.png> <tmp>.png`, Read it,
      read x,y,w,h in % (origin top-left). Whole page = `0,0,100,100`.
    - Then ALWAYS `python3 .claude/skills/markup/scripts/refine_regions.py <unit>` (dry run), then
      `--apply`. Every FLAGGED region: render a crop-box overlay on the page and fix it by hand.
      A thin white margin beats any cut.
-   - Keys: `<n>` numbers the figures on that printed page in reading order; a spread figure uses the
+   - Keys end in `f<n>` (`1987-2|16|f1`; the `f` keeps them apart from part keys): `<n>` numbers the figures on that printed page in reading order; a spread figure uses the
      range (`16-17`). Never renumber an existing key.
    - `caption`: the printed caption (it also stays in the text). `creators`: only names printed as
      credit (Foto: …, the cover credit) — never guessed.
@@ -64,7 +64,8 @@ Never let extract.sh overwrite an existing `text-clean/` — check it first; if 
    `<!-- note: {type: transcription, text: "…"} -->` with the text unchanged (JSON-quote it). Printed
    text that followed a note on the same line stays as text on the next line.
 8. **References.** Link mentions per the content rules, e.g. other issues
-   `[Grottan nr 4, 1982](../ref/grottan/1982-4.md)`, a page `…/1986-4/p22.md`, caves
+   `[Grottan nr 4, 1982](../ref/grottan/1982-4.md)`, a page `…/1986-4/page/22.md`, an article
+   `…/0001-2/part/1-2~1.md` (part key without the unit segment), a figure `…/1987-2/figure/1~f1.md`, caves
    `../ref/ssf/933.md`. Never guess an id: ambiguous or unknown → `../ref/<ns>/unknown.md`. Add
    `subjects: [ssf/…]` to a part/figure only when it is clearly *about* that entity.
    - **Names files are binding.** If the namespace has a names file (`refs.<ns>.names` in
@@ -79,6 +80,12 @@ Never let extract.sh overwrite an existing `text-clean/` — check it first; if 
      Speleotastic `search` with an area filter, `get-cave` for areas, alternate names and location).
      A named part of a cave links to the whole cave, and not at all if that cave is already linked
      earlier in the same article. When the evidence is thin: `unknown` (or `candidates`) and say why.
+   - **Cite the article, not the page.** A mention of an article in another unit ("Grottan 3-73
+     sid 7", "Gr. 8.3, s. 13-17") links to that article's part (`…/<id>/part/<pages>~<n>.md`): find
+     the part in the target unit whose pages cover the cited page(s) — the cited range, the part
+     starting there, the context (title, subject) when several short parts share the page. Keep a
+     page link only for a real page reference: a continuation within the unit ("forts sid 5",
+     "nästa sida"), a range spanning several articles, or a target unit not marked up yet.
    - **Only names go in the names file.** A descriptive phrase ("en grotta", "grottan", "a cave on the
      island") may be linked in place when the context identifies the cave, but never becomes a fixed
      entry — at most `candidates` with a hint.

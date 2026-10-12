@@ -4,14 +4,17 @@
  * generated files under the content repo's `ref/` folder:
  *
  *     [Grottan 4/86](../ref/grottan/1986-4.md)                    a unit (namespace `grottan`, units: true)
- *     [Grottan nr 4, 1982](../ref/grottan/1982-4/p22.md)           page 22 of a unit
- *     [Neotektonik …](../ref/grottan/1987-2/1987-2~4-9~1.md)       a part or figure, by key
+ *     [Grottan nr 4, 1982](../ref/grottan/1982-4/page/22.md)       page 22 of a unit
+ *     [Neotektonik …](../ref/grottan/1987-2/part/4-9~1.md)         part 1987-2|4-9|1
+ *     [omslaget](../ref/grottan/1987-2/figure/1~f1.md)             figure 1987-2|1|f1
  *     [Torekulla kyrka](../ref/ssf/933.md)                         an entity in namespace `ssf`
  *     [Kalkgrottan](../ref/ssf/unknown.md)                         type known, id not yet
  *
  * Every target sits in a namespace folder declared under `refs:` in publication-md.yaml. The path
  * IS the identity, so the links work in any markdown viewer (the generated file forwards to the
- * target) and tools read them without special syntax. `|` in keys is written `~`. Spec §3.5.
+ * target) and tools read them without special syntax. Below a unit, the folder names the kind
+ * (`page`, `part`, `figure`) — no one-letter prefixes. A part/figure file is its key without the
+ * leading unit segment (already in the path), `|` written `~`. Spec §3.5.
  */
 
 /** A parsed reference target. Unit ids are `<namespace>-<local id>` (e.g. `grottan-1982-4`). */
@@ -28,7 +31,7 @@ export interface RefNamespaces {
 	entities: ReadonlySet<string>
 }
 
-const RE_REF = /(?:^|\/)ref\/((?:[^/]+\/){1,2}[^/]+)\.md$/
+const RE_REF = /(?:^|\/)ref\/((?:[^/]+\/){1,3}[^/]+)\.md$/
 const RE_SEG = /^[A-Za-z0-9][A-Za-z0-9.,_~-]*$/
 
 /**
@@ -40,7 +43,7 @@ export function parseRef(href: string, ns: RefNamespaces): RefTarget | null {
 	if (!m) return null
 	const segs = (m[1] ?? '').split('/').map((x) => decodeURIComponent(x))
 	if (!segs.every((x) => RE_SEG.test(x))) return null
-	const [a = '', b = '', c] = segs
+	const [a = '', b = '', c, d] = segs
 	if (ns.entities.has(a)) {
 		if (c !== undefined) return null
 		return b === 'unknown' ? { kind: 'unresolved', ns: a } : { kind: 'entity', ns: a, id: b }
@@ -48,15 +51,21 @@ export function parseRef(href: string, ns: RefNamespaces): RefTarget | null {
 	if (!ns.units.has(a)) return null
 	const unit = `${a}-${b}`
 	if (c === undefined) return { kind: 'unit', ns: a, unit }
-	const page = /^p(.+)$/.exec(c)
-	if (page && !c.includes('~')) return { kind: 'page', ns: a, unit, label: page[1] ?? '' }
-	return { kind: 'key', ns: a, unit, key: c.replaceAll('~', '|') }
+	if (d === undefined) return null
+	if (c === 'page' && !d.includes('~')) return { kind: 'page', ns: a, unit, label: d }
+	const key = `${b}|${d.replaceAll('~', '|')}`
+	if (c === 'part' && !isFigureKey(key)) return { kind: 'key', ns: a, unit, key }
+	if (c === 'figure' && isFigureKey(key)) return { kind: 'key', ns: a, unit, key }
+	return null
 }
 
 /** The namespace segment of a `ref/` path, declared or not. */
 export function refNamespaceOf(href: string): string | null {
 	return RE_REF.exec(href)?.[1]?.split('/')[0] ?? null
 }
+
+/** Figure keys end in `|f<n>` (part keys in a plain number). */
+export const isFigureKey = (key: string) => /\|f\d+$/.test(key)
 
 const local = (t: { ns: string; unit: string }) => t.unit.slice(t.ns.length + 1)
 
@@ -66,9 +75,11 @@ export function refPath(t: RefTarget): string {
 		case 'unit':
 			return `ref/${t.ns}/${local(t)}.md`
 		case 'page':
-			return `ref/${t.ns}/${local(t)}/p${t.label}.md`
-		case 'key':
-			return `ref/${t.ns}/${local(t)}/${t.key.replaceAll('|', '~')}.md`
+			return `ref/${t.ns}/${local(t)}/page/${t.label}.md`
+		case 'key': {
+			const rest = t.key.slice(t.key.indexOf('|') + 1).replaceAll('|', '~')
+			return `ref/${t.ns}/${local(t)}/${isFigureKey(t.key) ? 'figure' : 'part'}/${rest}.md`
+		}
 		case 'entity':
 			return `ref/${t.ns}/${t.id}.md`
 		case 'unresolved':
@@ -94,7 +105,7 @@ export function refId(t: RefTarget): string {
 
 /**
  * `subjects:` entries in part/figure blocks use the same identity without the file
- * decoration: `ssf/933`, `grottan/1982-4/p22`, or a full `../ref/…/….md` link.
+ * decoration: `ssf/933`, `grottan/1982-4/page/22`, `grottan/1987-2/part/4-9~1`, or a full `../ref/…/….md` link.
  */
 export function parseSubject(s: string, ns: RefNamespaces): RefTarget | null {
 	const path = s.endsWith('.md') ? s : `ref/${s}.md`

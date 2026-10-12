@@ -316,6 +316,8 @@ export function validateUnit(unit: UnitInput, ctx: Context = {}): Problem[] {
 					if (v.id !== undefined)
 						err(file, line, 'figure.id is now figure.key (same style as part keys)')
 					if (typeof v.key !== 'string' || !v.key) err(file, line, 'figure.key: required string')
+					else if (!/\|f\d+$/.test(v.key))
+						err(file, line, `figure.key "${v.key}": must end in |f<n> (e.g. "1987-2|16|f1")`)
 					else if (figureIds.has(v.key))
 						err(file, line, `figure.key "${v.key}" already used in ${figureIds.get(v.key)}`)
 					else {

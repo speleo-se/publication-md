@@ -22,6 +22,8 @@ export interface CorpusUnit extends CorpusUnitInput {
 	labels: Map<string, number> | null
 	/** part/figure key → page file name */
 	keys: Map<string, string>
+	/** part title / figure caption by key, when given */
+	keyTitles: Map<string, string>
 }
 
 export interface Corpus {
@@ -51,6 +53,7 @@ export function buildCorpus(inputs: CorpusUnitInput[], config: ContentConfig): C
 			}
 		}
 		const keys = new Map<string, string>()
+		const keyTitles = new Map<string, string>()
 		for (const p of u.pages) {
 			for (const b of parseBlocks(p.text, p.name)) {
 				if (b.kind === 'page' && !d.pageSequence) {
@@ -59,10 +62,12 @@ export function buildCorpus(inputs: CorpusUnitInput[], config: ContentConfig): C
 				}
 				if ((b.kind === 'part' || b.kind === 'figure') && isObj(b.value) && typeof b.value.key === 'string' && b.value.continued !== true) {
 					keys.set(b.value.key, p.name)
+					const t = b.kind === 'part' ? b.value.title : b.value.caption
+					if (typeof t === 'string' && t) keyTitles.set(b.value.key, t)
 				}
 			}
 		}
-		const unit: CorpusUnit = { ...u, id, labels, keys }
+		const unit: CorpusUnit = { ...u, id, labels, keys, keyTitles }
 		if (typeof d.title === 'string') unit.title = d.title
 		units.set(id, unit)
 	}

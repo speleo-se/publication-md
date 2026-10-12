@@ -177,7 +177,7 @@ An image is a Markdown image whose path names a **region of a PDF page** (§5):
 
 ```markdown
 ![Firning i Stora Sjöfallets grotta](img/p008_pct-54.3,6.05,19.96,87.9.jpg)
-<!-- figure: {key: "2007-1|8|1", kind: photo, caption: "Firning i …", creators: [{name: Anna Svensson, role: photographer}], license: "© SSF"} -->
+<!-- figure: {key: "2007-1|8|f1", kind: photo, caption: "Firning i …", creators: [{name: Anna Svensson, role: photographer}], license: "© SSF"} -->
 ```
 
 | Field | Req. | Meaning |
@@ -190,15 +190,17 @@ An image is a Markdown image whose path names a **region of a PDF page** (§5):
 
 **Figure keys.** A figure is identified by its `key`, never by its image path: the path holds
 the crop and changes whenever the region is fine-tuned, the key does not. Keys use the same
-style as part keys — `<unit>|<printed page(s)>|<n>` — where `<n>` numbers the figures on that
-printed page in reading order and a figure across a spread uses the range (`1987-2|16-17|1`).
+style as part keys but with an `f` before the number — `<unit>|<printed page(s)>|f<n>` — where
+`<n>` numbers the figures on that printed page in reading order and a figure across a spread uses
+the range (`1987-2|16-17|f1`). The `f` keeps figure keys apart from part keys (`1987-2|16|1` is a
+part, `1987-2|16|f1` a figure), so a key alone says what it names.
 Rules:
 
 - Assign once, never renumber. A figure added later gets the next free `<n>` on its page,
   even if it sits above existing ones; a removed figure's key is not reused.
 - The pages segment is checked against `pageSequence` (warning when it doesn't resolve).
 - Outside the repo, a figure is referenced as `<publication id>#<key>`
-  (e.g. `grottan-1987-2#1987-2|5|1`) — the unit's `id` makes it globally unique.
+  (e.g. `grottan-1987-2#1987-2|5|f1`) — the unit's `id` makes it globally unique.
 
 The image's `alt` text is the human description (what the old `*[Foto: …]*` lines held).
 
@@ -225,8 +227,8 @@ the target, so the links work in any markdown viewer — GitHub included — wit
 
 ```markdown
 …beskrevs i [Grottan nr 4, 1982](../ref/grottan/1982-4.md).
-…kan du läsa i [Grottan nr 4 1986, sidan 22](../ref/grottan/1986-4/p22.md).
-…se [artikeln](../ref/grottan/1987-2/1987-2~4-9~1.md).
+…kan du läsa i [Grottan nr 4 1986, sidan 22](../ref/grottan/1986-4/page/22.md).
+…se [artikeln](../ref/grottan/1987-2/part/4-9~1.md).
 …grottan [Torekulla kyrka](../ref/ssf/933.md) i Östergötland.
 …[Degerfällegrottan](../ref/ssf/unknown.md) norr om Örnsköldsvik.
 ```
@@ -238,8 +240,9 @@ A units namespace (`grottan: {units: true}`) holds the repo's own units — unit
 | Path (from a page file) | Target |
 |---|---|
 | `../ref/<ns>/<local>.md` | a unit (`../ref/grottan/1982-4.md` = unit `grottan-1982-4`) |
-| `../ref/<ns>/<local>/p<label>.md` | a printed page of a unit (resolved through its `pageSequence`) |
-| `../ref/<ns>/<local>/<key>.md` | a part or figure by key, `|` written `~` |
+| `../ref/<ns>/<local>/page/<label>.md` | a printed page of a unit (resolved through its `pageSequence`) |
+| `../ref/<ns>/<local>/part/<key>.md` | a part, by its key without the leading unit segment, `|` written `~` (`part/4-9~1.md` = `1987-2|4-9|1`) |
+| `../ref/<ns>/<local>/figure/<key>.md` | a figure, likewise (`figure/1~f1.md` = `1987-2|1|f1`) |
 | `../ref/<ns>/<id>.md` | an entity (`../ref/ssf/933.md`) |
 | `../ref/<ns>/unknown.md` | an entity of that kind whose id is not known yet (a to-do list) |
 
@@ -250,7 +253,7 @@ Canonical string forms (for tools and imports): `grottan-1982-4`, `grottan-1986-
 decoration, resolved ids only:
 
 ```markdown
-<!-- figure: {key: "1987-2|1|1", kind: cover, subjects: [ssf/175]} -->
+<!-- figure: {key: "1987-2|1|f1", kind: cover, subjects: [ssf/175]} -->
 <!-- part: {key: "1987-2|14-18|1", type: article-magazine, subjects: [ssf/1375, ssf/1496, grottan/1986-4]} -->
 ```
 
@@ -312,7 +315,7 @@ node tools/validate.ts [unit…] [--errors-only]
 Errors: reference links that don't parse or whose unit, page, key or namespace doesn't exist,
 unresolved `subjects`, malformed blocks or YAML, unknown comments (incl. the old `<!-- page N -->` spelling), invalid
 `pageSequence` or one whose page count differs from the files, page markers that differ from
-`pageSequence` (or, without it, numeric markers out of order), `part.pages` that don't resolve, duplicate part or figure keys, a figure using the old `id` field,
+`pageSequence` (or, without it, numeric markers out of order), `part.pages` that don't resolve, duplicate part or figure keys, a figure key not ending in `|f<n>`, a figure using the old `id` field,
 figure not directly after an image, image path in `img/` that doesn't parse, missing required fields, unknown `container.id`. Warnings: part/figure keys whose pages segment doesn't resolve in `pageSequence`, unknown keys,
 people not in `people.yaml`, images that are not region references.
 
