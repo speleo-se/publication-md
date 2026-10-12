@@ -23,7 +23,8 @@
 		"stats": "node tools/stats.ts",
 		"test": "vitest run",
 		"typecheck": "tsc --noEmit",
-		"refs": "node tools/refs.ts"
+		"refs": "node tools/refs.ts",
+		"registry": "node tools/registry.ts"
 	},
 	"dependencies": {
 		"@hyzyla/pdfium": "^2.1.13",

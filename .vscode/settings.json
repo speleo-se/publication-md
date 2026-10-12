@@ -1,0 +1,15 @@
+{
+	// Färga VS Codes vänstra verktygsfält (Activity Bar) rött, så att publication-md-fönstret
+	// skiljer sig från content-repona. Byt hex nedan om du vill ha en annan nyans.
+	"workbench.colorCustomizations": {
+		"activityBar.background": "#B3261E",
+		"activityBar.foreground": "#ffffff",
+		"activityBar.inactiveForeground": "#ffffffb0",
+		"activityBarBadge.background": "#6E1510",
+		"activityBarBadge.foreground": "#ffffff"
+	},
+	"workbench.editorAssociations": {
+		"*.md": "vscode.markdown.preview.editor",
+		"git:/**/*.md": "default"
+	}
+}

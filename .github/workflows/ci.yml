@@ -1,0 +1,67 @@
+# CI for publication-md.
+#
+#   ci        every push and pull request: typecheck, tests, and generated files must be current.
+#   generate  push to main: regenerate generated files (REGISTRY.md from registry.yaml) and commit
+#             them back, so editing registry.yaml alone is enough.
+#
+# Commits made with GITHUB_TOKEN do not trigger further workflow runs, so there is no loop.
+name: ci
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  generate:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - name: Regenerate REGISTRY.md
+        run: npm run registry
+      - name: Commit generated files
+        run: |
+          if git diff --quiet -- REGISTRY.md; then
+            echo "Generated files are current."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add REGISTRY.md
+          git commit -m "Regenerate REGISTRY.md from registry.yaml"
+          git push
+
+  ci:
+    needs: [generate]
+    # Run even when generate was skipped (pull requests, other branches), but not if it failed.
+    if: ${{ !cancelled() && needs.generate.result != 'failure' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # On main, test what generate just pushed.
+          ref: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' && 'main' || '' }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm test
+      - name: Generated files are current
+        run: node tools/registry.ts --check

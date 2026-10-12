@@ -1,4 +1,5 @@
-# Known content repos using publication-md. Add yours with a pull request.
+# Known content repos using publication-md — the source of truth for REGISTRY.md
+# (generated: run `npm run registry` after editing). Add yours with a pull request.
 # access: public | private (say how access is obtained)
 - name: grottan
   repo: https://github.com/speleo-se/grottan-markdown-content
