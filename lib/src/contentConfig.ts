@@ -1,12 +1,13 @@
 import { parse as parseYaml } from 'yaml'
-import type { Problem } from './types.ts'
+import { compareVersions } from './migrations.ts'
+import { CURRENT_VERSION, type Problem } from './types.ts'
 
 /**
  * `publication-md.yaml` at the root of a content repo: who owns the content, how its
  * units are named, where the source PDFs live, and which content-specific rules apply.
  * See spec/content-repo.md.
  */
-export const CONTENT_CONFIG = 'publication-md-content/1'
+export const CONTENT_CONFIG = `publication-md-content/${CURRENT_VERSION}` as const
 
 export interface SourceGdrive {
 	type: 'gdrive'
@@ -48,8 +49,6 @@ export interface ContentConfig {
 	sources?: Source[]
 	/** Folder (relative to the content repo) with content-specific skill rules. Default `rules`. */
 	rules?: string
-	/** Domains the devcontainer firewall must allow for this content. */
-	firewall?: string[]
 	/**
 	 * Reference namespaces (`ref/<ns>/…`). `units: true` marks a namespace of publication units —
 	 * this repo's own (`ref/grottan/1982-4.md` ↔ unit id `grottan-1982-4`); the others are entity
@@ -59,6 +58,20 @@ export interface ContentConfig {
 	/** Options for the transcription tooling, e.g. `noteLabel`, `alphabet`. */
 	transcribe?: Record<string, unknown>
 	[key: string]: unknown
+}
+
+/**
+ * Message for a version mismatch: an older (or other) known version gets an upgrade hint,
+ * anything else the plain expectation.
+ */
+export function versionMessage(field: string, prefix: string, value: unknown): string {
+	const want = `${prefix}/${CURRENT_VERSION}`
+	const m = typeof value === 'string' ? new RegExp(`^${prefix}/(\\d+(?:\\.\\d+)*)$`).exec(value) : null
+	if (!m) return `${field} must be "${want}"`
+	const v = m[1] ?? ''
+	return compareVersions(v, CURRENT_VERSION) > 0
+		? `content is ${prefix} ${v}, newer than these tools (${CURRENT_VERSION}) — update publication-md`
+		: `content is ${prefix} ${v}, these tools are ${CURRENT_VERSION} — run: npm run content -- upgrade (or use publication-md ${v})`
 }
 
 const isObj = (v: unknown): v is Record<string, unknown> =>
@@ -82,7 +95,7 @@ export function parseContentConfig(text: string): { config: ContentConfig | null
 		err('must be a mapping')
 		return { config: null, problems }
 	}
-	if (d.config !== CONTENT_CONFIG) err(`config must be "${CONTENT_CONFIG}"`)
+	if (d.config !== CONTENT_CONFIG) err(versionMessage('config', 'publication-md-content', d.config))
 	if (typeof d.name !== 'string' || !RE_NAME.test(d.name)) err('name: required, [a-z0-9._-]')
 	if (!isObj(d.units) || typeof d.units.glob !== 'string' || !d.units.glob) err('units.glob: required')
 	else if (d.units.patterns !== undefined) {
@@ -117,10 +130,6 @@ export function parseContentConfig(text: string): { config: ContentConfig | null
 				if (v !== null && !isObj(v)) err(`refs.${ns} must be a mapping`)
 				else if (isObj(v) && v.url !== undefined && !String(v.url).includes('{id}')) err(`refs.${ns}.url needs {id}`)
 			}
-	}
-	for (const k of ['firewall'] as const) {
-		const v = d[k]
-		if (v !== undefined && (!Array.isArray(v) || v.some((x) => typeof x !== 'string'))) err(`${k} must be a list of strings`)
 	}
 	return { config: problems.length ? null : (d as ContentConfig), problems }
 }

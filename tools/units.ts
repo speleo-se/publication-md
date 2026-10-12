@@ -9,7 +9,13 @@ import { loadWorkspace, takeContentArg, type Workspace } from './workspace.ts'
 
 /** Resolve the workspace from argv (consumes `--content <name>`). */
 export function workspaceFromArgs(argv: string[]): Workspace {
-	return loadWorkspace(takeContentArg(argv))
+	try {
+		return loadWorkspace(takeContentArg(argv))
+	} catch (e) {
+		// A clear message (e.g. "run: npm run content -- upgrade"), not a stack trace.
+		console.error(e instanceof Error ? e.message : e)
+		process.exit(1)
+	}
 }
 
 const RE_PAGE = /^pageIndex-\d{3,}\.md$/

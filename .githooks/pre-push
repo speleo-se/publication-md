@@ -1,0 +1,4 @@
+#!/bin/sh
+# publication-md's own pre-push hook: the same checks as CI, before anything leaves the machine.
+# Bypass: git push --no-verify.
+npm run --silent typecheck && npm test --silent && node tools/registry.ts --check

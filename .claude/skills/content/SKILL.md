@@ -21,9 +21,7 @@ npm run content -- add <url-or-path> --name <name>
 
 `add` checks the repo's `publication-md.yaml` (spec/content-repo.md), makes it active and prints
 its owner, copyright and licence — **tell the user these**; much content is not freely
-redistributable. If it prints firewall domains, the devcontainer needs them: add them to
-`.devcontainer/init-firewall.sh` and ask the user to rebuild (you cannot change the firewall
-yourself).
+redistributable.
 
 Known repos are listed in `registry.yaml` — offer them when the user asks what exists. Some are
 private; access is granted by their owner, not by publication-md.
@@ -61,5 +59,25 @@ npm run content -- remove <name>   # unlinks a symlink; a clone is left for the 
 node tools/workspace.ts            # active repo + its content/work paths
 PMD_CONTENT=<name> <command>       # act on another repo for one command
 ```
+
+`add` and `init` install git hooks in the content repo: pre-commit regenerates `ref/` and
+`STATS.md` into each commit, pre-push validates (a failure blocks the push — fix it rather than
+reaching for `--no-verify`). `npm run content -- hooks install <name>` re-installs them, e.g.
+after publication-md has moved.
+
+## Upgrading a content repo to a new publication-md version
+
+When validation, `content add` or the pre-push hook says *"content is publication-md-content 0.1,
+these tools are 0.2 — run: npm run content -- upgrade"*, the repo needs migrating. It is a
+deterministic tool, not a judgement call:
+
+```bash
+npm run content -- upgrade <name> --check   # is an upgrade due? (exit 1 = yes)
+npm run content -- upgrade <name>           # migrate, regenerate ref/ + STATS.md, validate
+```
+
+It refuses to run with uncommitted changes (so the upgrade is one reviewable diff). Show the user
+the summary and `git diff --stat`, and let them commit. "Newer than these tools" means the user
+should update publication-md (`git pull`), not the content.
 
 Never delete a cloned content repo yourself — it may hold unpushed work.

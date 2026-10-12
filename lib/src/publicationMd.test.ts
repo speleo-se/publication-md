@@ -4,7 +4,7 @@ import { parseBlocks, stripComments } from './parse.ts'
 import { collectParts, parsePeople, validateUnit } from './validate.ts'
 
 const PUBLICATION = `---
-format: publication-md/1
+format: publication-md/0.1
 id: grottan-2007-1
 type: periodical
 title: Grottan 2007:1
@@ -136,7 +136,7 @@ describe('validateUnit', () => {
 
 describe('pageSequence', () => {
 	const pub = (seq: string) =>
-		`---\nformat: publication-md/1\nid: u\ntype: periodical\npageSequence: "${seq}"\n---\n`
+		`---\nformat: publication-md/0.1\nid: u\ntype: periodical\npageSequence: "${seq}"\n---\n`
 	const unit = (seq: string, pages: string[]) => ({
 		name: 'u',
 		publication: pub(seq),

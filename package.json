@@ -24,7 +24,8 @@
 		"test": "vitest run",
 		"typecheck": "tsc --noEmit",
 		"refs": "node tools/refs.ts",
-		"registry": "node tools/registry.ts"
+		"registry": "node tools/registry.ts",
+		"prepare": "git config core.hooksPath .githooks 2>/dev/null || true"
 	},
 	"dependencies": {
 		"@hyzyla/pdfium": "^2.1.13",

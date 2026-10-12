@@ -12,15 +12,18 @@ This repo contains:
 
 | | |
 |---|---|
-| [`spec/`](spec/README.md) | The format specification (v1) and JSON Schema — CC0 (public domain) |
+| [`spec/`](spec/README.md) | The format specification (v0.1) and JSON Schema — CC0 (public domain) |
 | [`spec/content-repo.md`](spec/content-repo.md) | How a content repo is laid out and configured |
 | `lib/src/` | Reference library (TypeScript, no build step; Node ≥ 22.18 and Cloudflare Workers): parse, validate, split into articles, cut images out of PDFs |
 | `tools/` | Command-line tools: validate, extract images, statistics, fetch source PDFs, manage content repos |
 | `.claude/skills/` | [Claude Code](https://claude.com/claude-code) skills: `transcribe` (scan / born-digital PDF → proofread publication-md), `pdf-extract`, `content` |
 | `templates/content-repo/` | What `npm run content -- init` writes for a new content repo |
 | `.github/workflows/content.yml` | Reusable GitHub Action for content repos: validate, regenerate `ref/` + `STATS.md` |
-| `.devcontainer/` | A ready environment with Claude Code, the PDF/OCR toolchain and a default-deny firewall |
+| `.devcontainer/` | A ready environment with Claude Code and the PDF/OCR toolchain |
 | [`registry.yaml`](REGISTRY.md) | Known content repos using publication-md |
+
+**Status: version 0.1 — not yet stable.** The format and tools may still change incompatibly
+between 0.x versions (see [spec §7](spec/README.md#7-versioning)).
 
 The content itself lives in separate **content repos** — one per publication or archive,
 owned by whoever owns the content. publication-md never contains content.
@@ -40,9 +43,7 @@ Then, in Claude Code, ask for the next unit: *"transcribe Next"* — or *"add re
 the `content` skill do the setup.
 
 Opening the folder in VS Code → **Reopen in Container** gives the full environment
-(poppler, tesseract, qpdf, gdrive, Claude Code). The container has a default-deny egress
-firewall; `npm run content add` prints any hosts a content repo needs — add them to
-`.devcontainer/init-firewall.sh` and rebuild.
+(poppler, tesseract, qpdf, gdrive, Claude Code).
 
 ## The workspace
 
@@ -58,6 +59,7 @@ npm run content -- list | use <name> | remove <name>
 node tools/workspace.ts               # which repo is active, and its paths
 PMD_CONTENT=<name> npm run validate   # act on another repo for one command
 npm run fetch -- <unit>               # download a source PDF (per the repo's `sources`)
+npm run content -- upgrade [<name>]   # migrate a content repo to this publication-md version
 npm run extract-images -- <unit>      # write <unit>-content/img/* from the PDF
 npm run stats                         # write the repo's STATS.md
 npm run refs                          # regenerate the repo's ref/ (reference targets + indexes)
@@ -65,6 +67,13 @@ npm run refs                          # regenerate the repo's ref/ (reference ta
 
 Every tool and skill resolves paths through `tools/workspace.ts`, so they always agree on which
 content repo they work on.
+
+`content add` and `content init` also install **git hooks** in the content repo (manage them with
+`npm run content -- hooks install|uninstall [<name>|--all]`): *pre-commit* regenerates `ref/` and
+`STATS.md` into the commit, *pre-push* validates and blocks a push with errors. So the GitHub
+Action rarely has to commit back, and you rarely have to pull after pushing. Bypass with
+`--no-verify`. publication-md's own hooks (`.githooks/`, enabled by `npm install`) keep
+`REGISTRY.md` current and run the CI checks before a push.
 
 ## Content-specific rules
 

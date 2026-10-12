@@ -6,12 +6,17 @@
  *   node tools/content.ts list
  *   node tools/content.ts use <name>
  *   node tools/content.ts remove <name>      unlinks a symlink; a clone is left for you to delete
+ *   node tools/content.ts hooks install|uninstall [<name>|--all]
+ *                                            git hooks in the content repo: pre-commit regenerates
+ *                                            ref/ + STATS.md into the commit, pre-push validates
+ *   node tools/content.ts upgrade [<name>] [--check]
+ *                                            migrate a content repo to this publication-md version
  *   node tools/content.ts init <dir> --name <name> [--title …] [--owner …] [--language sv]
  *                                            [--license …] [--note-label …]
  *                                            create a new, fully set-up content repo and add it
  *
  * `add` checks the repo's publication-md.yaml, makes it the active repo, and reports anything
- * the environment needs for it (firewall domains for the devcontainer).
+ * the owner, copyright and licence of the content.
  */
 import { spawnSync } from 'node:child_process'
 import {
@@ -27,7 +32,7 @@ import {
 	writeFileSync,
 } from 'node:fs'
 import { basename, dirname, join, relative, resolve } from 'node:path'
-import { parseContentConfig } from '../lib/src/index.ts'
+import { CURRENT_VERSION, type FileMap, parseContentConfig, upgradeFiles, versionOf } from '../lib/src/index.ts'
 import { activeName, CONTENT_DIR, listContent, ROOT, WORK_DIR } from './workspace.ts'
 
 const ACTIVE = join(CONTENT_DIR, '.active')
@@ -52,6 +57,46 @@ const readConfig = (dir: string) => {
 
 mkdirSync(CONTENT_DIR, { recursive: true })
 
+const HOOKS = ['pre-commit', 'pre-push'] as const
+const MARK = '# publication-md hook'
+/** Install (or remove) this workspace's git hooks in a content repo. Returns what happened. */
+function hooks(dir: string, action: 'install' | 'uninstall'): string[] {
+	const r = spawnSync('git', ['-C', dir, 'rev-parse', '--git-path', 'hooks'], { encoding: 'utf8' })
+	if (r.status !== 0) return [`${dir} is not a git repo — hooks not ${action}ed`]
+	const hookDir = resolve(dir, r.stdout.trim())
+	mkdirSync(hookDir, { recursive: true })
+	const out: string[] = []
+	for (const h of HOOKS) {
+		const f = join(hookDir, h)
+		const ours = existsSync(f) && readFileSync(f, 'utf8').includes(MARK)
+		if (existsSync(f) && !ours) {
+			out.push(`${h}: left alone — ${f} exists and is not a publication-md hook`)
+			continue
+		}
+		if (action === 'uninstall') {
+			if (ours) {
+				unlinkSync(f)
+				out.push(`${h}: removed`)
+			}
+			continue
+		}
+		writeFileSync(
+			f,
+			[
+				'#!/bin/sh',
+				`${MARK} — installed by \`npm run content -- hooks install\`; bypass with --no-verify`,
+				`PMD=${JSON.stringify(ROOT)}`,
+				`if [ ! -f "$PMD/tools/hooks.ts" ]; then echo "publication-md not found at $PMD — skipping ${h} hook" >&2; exit 0; fi`,
+				`exec node "$PMD/tools/hooks.ts" ${h} --content-root "$(git rev-parse --show-toplevel)"`,
+				'',
+			].join('\n'),
+			{ mode: 0o755 },
+		)
+		out.push(`${h}: installed`)
+	}
+	return out
+}
+
 switch (cmd) {
 	case 'add': {
 		const nameArg = flag('--name')
@@ -75,14 +120,11 @@ switch (cmd) {
 		}
 		const cfg = readConfig(dir)
 		writeFileSync(ACTIVE, `${basename(dir)}\n`)
+		for (const line of hooks(dir, 'install')) console.log(`git hook ${line}`)
 		mkdirSync(join(WORK_DIR, basename(dir)), { recursive: true })
 		console.log(`active: ${basename(dir)} — ${cfg.title ?? cfg.name}${cfg.owner ? ` (${cfg.owner})` : ''}`)
 		if (cfg.copyright) console.log(`copyright: ${cfg.copyright}`)
 		if (cfg.license) console.log(`license: ${cfg.license}`)
-		if (cfg.firewall?.length) {
-			console.log(`\nThis content needs network access to: ${cfg.firewall.join(', ')}`)
-			console.log('In the devcontainer, add them to .devcontainer/init-firewall.sh (domains=…) and rebuild.')
-		}
 		console.log('\nNext: npm run validate   ·   npm run fetch -- <unit>   ·   ask Claude to transcribe the next unit')
 		break
 	}
@@ -163,6 +205,7 @@ switch (cmd) {
 		if (existsSync(link)) die(`content/${name} already exists — created ${dir} but did not link it`)
 		symlinkSync(dir, link)
 		writeFileSync(ACTIVE, `${name}\n`)
+		for (const line of hooks(dir, 'install')) console.log(`git hook ${line}`)
 		mkdirSync(join(WORK_DIR, name), { recursive: true })
 		console.log(`\ncreated ${dir} and linked content/${name} (active)`)
 		console.log(`Next:
@@ -172,6 +215,63 @@ switch (cmd) {
   4. Optional: add it to registry.yaml in publication-md (pull request).`)
 		break
 	}
+	case 'hooks': {
+		const arg = rest[0]
+		const action = arg === 'install' || arg === 'uninstall' ? arg : die('usage: content hooks install|uninstall [<name>|--all]')
+		const names = rest.includes('--all') ? listContent() : [rest[1] ?? activeName()]
+		for (const n of names) for (const line of hooks(join(CONTENT_DIR, n), action)) console.log(`${n}: ${line}`)
+		break
+	}
+	case 'upgrade': {
+		const check = rest.includes('--check')
+		const name = rest.find((a) => !a.startsWith('--')) ?? activeName()
+		const dir = join(CONTENT_DIR, name)
+		const cfgFile = join(dir, 'publication-md.yaml')
+		if (!existsSync(cfgFile)) die(`content/${name} has no publication-md.yaml`)
+		const from = versionOf(readFileSync(cfgFile, 'utf8')) ?? die(`${cfgFile}: no "config: publication-md-content/<version>" line`)
+		if (from === CURRENT_VERSION) {
+			console.log(`${name}: up to date (publication-md ${CURRENT_VERSION})`)
+			break
+		}
+		if (check) {
+			console.log(`${name}: publication-md ${from} → ${CURRENT_VERSION} upgrade due — run: npm run content -- upgrade ${name}`)
+			process.exit(1)
+		}
+		const dirty = spawnSync('git', ['-C', dir, 'status', '--porcelain'], { encoding: 'utf8' }).stdout.trim()
+		if (dirty) die(`${name} has uncommitted changes — commit or stash them first, so the upgrade is one reviewable diff`)
+		// Every text file a migration may touch (ref/ is regenerated afterwards, .git is never read).
+		const files: FileMap = new Map()
+		const walk = (d: string, rel = '') => {
+			for (const e of readdirSync(join(d, rel), { withFileTypes: true })) {
+				const r = rel ? `${rel}/${e.name}` : e.name
+				if (e.isDirectory()) {
+					if (!['.git', 'ref', 'img', 'node_modules'].includes(e.name)) walk(d, r)
+				} else if (/\.(md|ya?ml)$/.test(e.name)) files.set(r, readFileSync(join(d, r), 'utf8'))
+			}
+		}
+		walk(dir)
+		let result: ReturnType<typeof upgradeFiles>
+		try {
+			result = upgradeFiles(files, from)
+		} catch (e) {
+			die(`${name}: ${e instanceof Error ? e.message : e}`)
+			break
+		}
+		let changed = 0
+		for (const [r, t] of result.files) {
+			if (files.get(r) === t) continue
+			writeFileSync(join(dir, r), t)
+			changed++
+		}
+		for (const step of result.steps) console.log(`  ${step}`)
+		const env = { ...process.env, PMD_CONTENT_ROOT: dir }
+		for (const tool of ['refs.ts', 'stats.ts']) spawnSync(process.execPath, [join(ROOT, 'tools', tool)], { cwd: ROOT, env, stdio: 'inherit' })
+		const v = spawnSync(process.execPath, [join(ROOT, 'tools', 'validate.ts'), '--errors-only'], { cwd: ROOT, env, encoding: 'utf8' })
+		console.log(v.stdout.trim().split('\n').at(-1) ?? '')
+		console.log(`\n${name}: upgraded ${from} → ${CURRENT_VERSION} (${changed} file(s) changed). Review with: git -C ${dir} diff — then commit.`)
+		if (v.status !== 0) process.exit(1)
+		break
+	}
 	default:
-		die('usage: content add|list|use|remove|init …  (see tools/content.ts)')
+		die('usage: content add|list|use|remove|init|hooks|upgrade …  (see tools/content.ts)')
 }

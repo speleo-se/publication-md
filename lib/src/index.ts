@@ -27,6 +27,7 @@ export {
 	type UnitInfo,
 	unitId,
 	unitInfo,
+	versionMessage,
 } from './contentConfig.ts'
 export {
 	buildCorpus,
@@ -40,3 +41,13 @@ export {
 	resolveLabel,
 } from './corpus.ts'
 export { findLinks, type LinkHit, parseRef, parseSubject, type RefTarget, refId, refPath } from './refs.ts'
+export {
+	bumpVersion,
+	compareVersions,
+	type FileMap,
+	MIGRATIONS,
+	type Migration,
+	planUpgrade,
+	upgradeFiles,
+	versionOf,
+} from './migrations.ts'

@@ -2,7 +2,8 @@
 #
 #   ci        every push and pull request: typecheck, tests, and generated files must be current.
 #   generate  push to main: regenerate generated files (REGISTRY.md from registry.yaml) and commit
-#             them back, so editing registry.yaml alone is enough.
+#             them back. Normally .githooks/pre-commit (enabled by `npm install`) has already
+#             done this locally, so this is the fallback for commits made without the hook.
 #
 # Commits made with GITHUB_TOKEN do not trigger further workflow runs, so there is no loop.
 name: ci

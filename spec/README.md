@@ -1,10 +1,10 @@
-# publication-md — format specification (v1)
+# publication-md — format specification (v0.1)
 
 A plain-text format for **transcribed publications**: periodical issues, books, standalone
 articles, reports, pamphlets. It is Markdown + YAML only, so it can be read, diffed and
 parsed with any tool, independent of the software that produced or consumes it.
 
-- **Version:** `publication-md/1` (declared in every `publication.md`).
+- **Version:** `publication-md/0.1` (declared in every `publication.md`).
 - **Reference implementation:** `lib/src/` in the publication-md repo (TypeScript, no build
   step, runs in Node ≥ 22.18 and in Cloudflare Workers). `tools/validate.ts` validates,
   `tools/extract-images.ts` produces images.
@@ -45,7 +45,7 @@ YAML frontmatter between `---` lines. The body (optional) is free Markdown about
 
 | Field | Req. | Type | Meaning |
 |---|---|---|---|
-| `format` | ✓ | `publication-md/1` | Format version. |
+| `format` | ✓ | `publication-md/0.1` | Format version. |
 | `id` | ✓ | string `[A-Za-z0-9._\|:-]` | Stable repo-local key. Never an external database id. |
 | `type` | ✓ | CSL type | `periodical` (an issue), `book`, `article-journal`, `article-magazine`, `report`, `pamphlet`, `thesis`, … |
 | `title` | | string | Title as printed. |
@@ -89,7 +89,7 @@ Examples (the first is a real unit of the Grottan content repo):
 
 ```yaml
 ---  # a periodical issue
-format: publication-md/1
+format: publication-md/0.1
 id: grottan-2007-1
 type: periodical
 title: Grottan 2007:1
@@ -105,7 +105,7 @@ source: {file: SSF_Grottan_2007-1_webb.pdf, kind: digital}
 
 ```yaml
 ---  # a book
-format: publication-md/1
+format: publication-md/0.1
 id: example-book-1959
 type: book
 title: Example Book Title
@@ -119,7 +119,7 @@ source: {kind: scanned}
 
 ```yaml
 ---  # a standalone article (an offprint)
-format: publication-md/1
+format: publication-md/0.1
 id: offprint-karst-1972
 type: article-journal
 title: Karst in Sweden
@@ -310,7 +310,7 @@ node tools/validate.ts [unit…] [--errors-only]
 ```
 
 Errors: reference links that don't parse or whose unit, page, key or namespace doesn't exist,
-unresolved `subjects`, malformed blocks or YAML, unknown comments (incl. the pre-v1 `<!-- page N -->`), invalid
+unresolved `subjects`, malformed blocks or YAML, unknown comments (incl. the old `<!-- page N -->` spelling), invalid
 `pageSequence` or one whose page count differs from the files, page markers that differ from
 `pageSequence` (or, without it, numeric markers out of order), `part.pages` that don't resolve, duplicate part or figure keys, a figure using the old `id` field,
 figure not directly after an image, image path in `img/` that doesn't parse, missing required fields, unknown `container.id`. Warnings: part/figure keys whose pages segment doesn't resolve in `pageSequence`, unknown keys,
@@ -318,6 +318,16 @@ people not in `people.yaml`, images that are not region references.
 
 ## 7. Versioning
 
-The format version changes only for incompatible changes (renamed/removed fields, changed
-meaning). Adding optional fields is not a new version. A consumer must reject a `format`
-major version it does not know.
+The format is at **0.1 — not yet stable.** While the version is `0.x`, any minor bump
+(`0.1` → `0.2`) may make incompatible changes; the tools will offer a migration where they can.
+From `1.0` on, the version changes only for incompatible changes (renamed/removed fields, changed
+meaning), and adding optional fields is not a new version.
+
+A consumer must reject a `format` it does not know (below 1.0: the exact `0.x`; from 1.0: the
+major version). The content-repo config (`publication-md-content/0.1`) and the git tags that
+content repos pin their GitHub Action to (`v0.1`) follow the same version.
+
+**Upgrades** are done by a tool, not by hand: `npm run content -- upgrade` migrates a content repo
+to the version of the publication-md checkout (config, every `publication.md`, renamed fields,
+the workflow pin), then regenerates `ref/` and `STATS.md` and validates. Every incompatible
+change ships with its migration (`lib/src/migrations.ts`).

@@ -28,8 +28,7 @@ run mkdir -p "$WORK/pages" "$WORK/text" "$WORK/text-clean"
 # --- fetch (temp + move on success; reuse an existing original.pdf on failure) ------
 PDF="$WORK/original.pdf"; tmp="$WORK/original.pdf.download"; ok=false
 if printf '%s' "$SRC" | grep -qiE '^https?://'; then
-  # -4: dev firewall allowlists IPv4 only, avoid a blocked IPv6 address on dual-stack.
-  if run curl -4 -fSL "$SRC" -o "$tmp"; then ok=true; fi
+  if run curl -fSL "$SRC" -o "$tmp"; then ok=true; fi
 else
   if run cp "$SRC" "$tmp"; then ok=true; fi
 fi

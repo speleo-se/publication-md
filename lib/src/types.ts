@@ -6,7 +6,9 @@
  * The human-readable spec lives in the content repo at `schema/README.md`.
  */
 
-export const FORMAT = 'publication-md/1'
+/** The publication-md version these tools implement (format, content config, workflow tag). */
+export const CURRENT_VERSION = '0.1'
+export const FORMAT = `publication-md/${CURRENT_VERSION}` as const
 
 /** A person reference. `name` should match a canonical name (or alias) in `people.yaml`. */
 export interface Person {
@@ -135,7 +137,7 @@ export interface Loc {
 export type Block =
 	/** `<!-- page: <label> -->` — where the printed page with this label starts. */
 	| { kind: 'page'; label: string; loc: Loc }
-	/** Pre-v1 `<!-- page N -->` spelling; only recognised to report it. */
+	/** Old `<!-- page N -->` spelling; only recognised to report it. */
 	| { kind: 'legacy-page'; label: string; loc: Loc }
 	| { kind: 'part'; value: unknown; loc: Loc }
 	| { kind: 'figure'; value: unknown; loc: Loc }

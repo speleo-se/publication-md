@@ -33,7 +33,7 @@ describe('ref paths', () => {
 })
 
 describe('corpus refs', () => {
-	const { config } = parseContentConfig(`config: publication-md-content/1
+	const { config } = parseContentConfig(`config: publication-md-content/0.1
 name: t
 units:
   glob: "T_*"
@@ -51,7 +51,7 @@ refs:
 		[
 			{
 				folder: 'T_1987_1-content',
-				publication: '---\nformat: publication-md/1\nid: t-1987-1\ntype: periodical\npageSequence: "1,2|3"\n---\n',
+				publication: '---\nformat: publication-md/0.1\nid: t-1987-1\ntype: periodical\npageSequence: "1,2|3"\n---\n',
 				pages: [
 					{ name: 'pageIndex-000.md', text: '<!-- part: {key: "1987-1|1|1", type: chapter} -->\nEtt.' },
 					{ name: 'pageIndex-001.md', text: '<!-- page: 2 -->\nTvå <!-- page: 3 --> tre [där](../ref/t/1987-2/p2.md).' },

@@ -4,7 +4,7 @@ FROM node:24
 ARG TZ
 ENV TZ="$TZ"
 
-# Install basic development tools and iptables/ipset
+# Install basic development tools
 RUN apt-get update && apt-get install -y --no-install-recommends \
   less \
   git \
@@ -16,8 +16,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
   unzip \
   gnupg2 \
   gh \
-  iptables \
-  ipset \
   iproute2 \
   dnsutils \
   aggregate \
@@ -130,10 +128,4 @@ RUN curl -fsSL https://claude.ai/install.sh | bash
 #    "when": "terminalFocus"
 #    }
 
-# Copy and set up firewall script
-COPY init-firewall.sh /usr/local/bin/
-USER root
-RUN chmod +x /usr/local/bin/init-firewall.sh && \
-  echo "node ALL=(root) NOPASSWD: /usr/local/bin/init-firewall.sh" > /etc/sudoers.d/node-firewall && \
-  chmod 0440 /etc/sudoers.d/node-firewall
 USER node

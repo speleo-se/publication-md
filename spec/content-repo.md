@@ -1,4 +1,4 @@
-# Content repos — specification (v1)
+# Content repos — specification (v0.1)
 
 A **content repo** holds transcribed publications in the publication-md format
 ([README.md](README.md)) plus the configuration the publication-md tools and skills need to
@@ -32,7 +32,7 @@ with `npm run refs` (`npm run refs -- --check` fails when it is stale — usable
 
 | Field | Req. | Meaning |
 |---|---|---|
-| `config` | ✓ | `publication-md-content/1` |
+| `config` | ✓ | `publication-md-content/0.1` |
 | `name` | ✓ | Short machine name `[a-z0-9._-]`; the default folder name under `content/`. |
 | `title`, `shortTitle` | | Human title; `shortTitle` is used in generated reports. |
 | `owner` | | Who owns the content (organisation or person). |
@@ -45,7 +45,6 @@ with `npm run refs` (`npm run refs -- --check` fails when it is stale — usable
 | `sources` | | Where the source PDFs live, tried in order (below). |
 | `refs` | | Reference namespaces (spec §3.5): `<ns>: {title, url?, units?}`. `units: true` = this repo's units (`grottan: {title: Grottan, units: true}` → `ref/grottan/1982-4.md` is unit `grottan-1982-4`); otherwise an entity namespace, `url` with `{id}` (e.g. `ssf: {title: "SSF:s riksnummer"}`). |
 | `rules` | | Folder of content-specific rules (default `rules`). |
-| `firewall` | | Hosts the devcontainer must allow for this content. |
 | `transcribe` | | Options for the transcription tooling: `noteLabel` (label of transcription notes), `alphabet` (extra letters of the language). |
 
 Keys prefixed `x-` are free for local use.
@@ -73,13 +72,18 @@ A content repo needs no tooling of its own: `.github/workflows/publication-md.ym
 permissions: { contents: write }
 jobs:
   content:
-    uses: speleo-se/publication-md/.github/workflows/content.yml@v1
-    with: { publication-md-ref: v1 }
+    uses: speleo-se/publication-md/.github/workflows/content.yml@v0.1
+    with: { publication-md-ref: v0.1 }
 ```
 
 which validates every push and pull request (errors fail the run) and, on pushes to the default
 branch, regenerates `ref/` and `STATS.md` and commits them back. Pin both to the same
-publication-md tag; use `main` until one exists.
+publication-md tag (`v0.1` while the format is 0.1); use `main` until one exists.
+
+The same work is normally done **locally first** by git hooks that publication-md installs in the
+content repo (`npm run content -- hooks install`, automatic on `content add`/`init`): pre-commit
+regenerates `ref/` and `STATS.md` into each commit, pre-push validates. The Action then finds
+nothing to commit; its commit-back is only a fallback for changes made without the hooks.
 
 ## Content-specific rules
 

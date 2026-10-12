@@ -3,8 +3,13 @@
 #
 #   jobs:
 #     content:
-#       uses: speleo-se/publication-md/.github/workflows/content.yml@v1
-#       with: { publication-md-ref: v1 }
+#       uses: speleo-se/publication-md/.github/workflows/content.yml@v0.1
+#       with: { publication-md-ref: v0.1 }
+#
+# Normally the local git hooks (`npm run content -- hooks install`, done by `content add/init`)
+# already regenerate ref/ and STATS.md into each commit, so this workflow only validates and finds
+# nothing to commit. The commit-back below is the fallback for changes made without the hooks
+# (GitHub web editor, --no-verify, a clone without hooks).
 #
 # What it does, with the publication-md tools at `publication-md-ref`:
 #   every run     validate the content (errors fail the run)

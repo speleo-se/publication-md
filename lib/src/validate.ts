@@ -1,6 +1,7 @@
 import { PageSequence } from '@tvartom/pagesequence'
 import { parse as parseYaml } from 'yaml'
 import { parseBlocks, parseFrontmatter } from './parse.ts'
+import { versionMessage } from './contentConfig.ts'
 import { FORMAT, type Person, type Problem } from './types.ts'
 
 /** One unit folder as read from disk (or R2): `publication.md` + `pageIndex-NNN.md` files. */
@@ -160,7 +161,7 @@ export function validateUnit(unit: UnitInput, ctx: Context = {}): Problem[] {
 		if (fm && !isObj(fm.data)) err(pf, 1, 'frontmatter must be a mapping')
 		if (fm && isObj(fm.data)) {
 			const d = fm.data
-			if (d.format !== FORMAT) err(pf, undefined, `format must be "${FORMAT}"`)
+			if (d.format !== FORMAT) err(pf, undefined, versionMessage('format', 'publication-md', d.format))
 			if (typeof d.id !== 'string' || !RE_ID.test(d.id))
 				err(pf, undefined, 'id: required, [A-Za-z0-9._|:-]')
 			if (typeof d.type !== 'string' || !d.type) err(pf, undefined, 'type: required (CSL type)')

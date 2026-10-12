@@ -1,0 +1,6 @@
+#!/bin/sh
+# publication-md's own pre-commit hook (enabled by `npm install` via core.hooksPath).
+# Keeps the generated REGISTRY.md in the same commit as registry.yaml. Bypass: --no-verify.
+if git diff --cached --name-only | grep -qx 'registry.yaml'; then
+  node tools/registry.ts && git add REGISTRY.md
+fi

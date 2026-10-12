@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { compareUnits, parseContentConfig, sourceCovers, unitInfo } from './contentConfig.ts'
 
-const YAML = `config: publication-md-content/1
+const YAML = `config: publication-md-content/0.1
 name: grottan
 units:
   glob: "SSF_Grottan_*_webb"
@@ -22,7 +22,7 @@ describe('content config', () => {
 	it('reports problems', () => {
 		const p = parseContentConfig('config: x\nname: Bad Name\nsources: [{type: ftp}]\n').problems.map((x) => x.message)
 		expect(p).toEqual([
-			'config must be "publication-md-content/1"',
+			'config must be "publication-md-content/0.1"',
 			'name: required, [a-z0-9._-]',
 			'units.glob: required',
 			'sources[0].type: gdrive or http',
