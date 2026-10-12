@@ -16,7 +16,7 @@ This repo contains:
 | [`spec/content-repo.md`](spec/content-repo.md) | How a content repo is laid out and configured |
 | `lib/src/` | Reference library (TypeScript, no build step; Node ≥ 22.18 and Cloudflare Workers): parse, validate, split into articles, cut images out of PDFs |
 | `tools/` | Command-line tools: validate, extract images, statistics, fetch source PDFs, manage content repos |
-| `.claude/skills/` | [Claude Code](https://claude.com/claude-code) skills: `transcribe` (scan / born-digital PDF → proofread publication-md), `pdf-extract`, `content` |
+| `.claude/skills/` | [Claude Code](https://claude.com/claude-code) skills: `transcribe` (scan / born-digital PDF → proofread text), `markup` (add the metadata: articles, figures, notes, references), `pdf-extract`, `content` |
 | `templates/content-repo/` | What `npm run content -- init` writes for a new content repo |
 | `.github/workflows/content.yml` | Reusable GitHub Action for content repos: validate, regenerate `ref/` + `STATS.md` |
 | `.devcontainer/` | A ready environment with Claude Code and the PDF/OCR toolchain |

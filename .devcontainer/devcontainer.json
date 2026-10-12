@@ -40,7 +40,9 @@
 		"source=claude-code-bashhistory-${devcontainerId},target=/commandhistory,type=volume",
 		"source=claude-code-config-${devcontainerId},target=/home/node/.claude,type=volume",
 		// gdrive CLI credentials (npm run fetch for gdrive sources), kept across rebuilds
-		"source=gdrive-config-${devcontainerId},target=/home/node/.config/gdrive3,type=volume"
+		"source=gdrive-config-${devcontainerId},target=/home/node/.config/gdrive3,type=volume",
+		// Google login for `npm run fetch` (tools/google.ts), kept across rebuilds
+		"source=pmd-config-${devcontainerId},target=/home/node/.config/publication-md,type=volume"
 	],
 	"containerEnv": {
 		"NODE_OPTIONS": "--max-old-space-size=4096",
@@ -49,5 +51,8 @@
 		"LAUNCH_EDITOR": "code"
 	},
 	"workspaceMount": "source=${localWorkspaceFolder},target=/workspace,type=bind,consistency=delegated",
-	"workspaceFolder": "/workspace"
+	"workspaceFolder": "/workspace",
+	// Default Claude Code settings (Remote Control at startup, input-needed notifications);
+	// only adds missing keys, so /config changes stick. See claude-defaults.sh.
+	"postCreateCommand": "sh .devcontainer/claude-defaults.sh"
 }

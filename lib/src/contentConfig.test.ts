@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { compareUnits, parseContentConfig, sourceCovers, unitInfo } from './contentConfig.ts'
+import { compareUnits, parseContentConfig, sourceCovers, unitId, unitInfo } from './contentConfig.ts'
 
 const YAML = `config: publication-md-content/0.1
 name: grottan
@@ -41,6 +41,22 @@ describe('content config', () => {
 		])
 		expect(unitInfo(config, 'SSF_Grottan_0002_3-4_1968_webb')).toMatchObject({ year: 1968, issue: '3-4', volume: '0002' })
 		expect(unitInfo(config, 'Other_2007')).toBeNull()
+	})
+	it('uses a per-pattern id template', () => {
+		const c = parseContentConfig(`config: publication-md-content/0.1
+name: g
+units:
+  glob: "SSF_Grottan_*_webb"
+  id: "grottan-{year}-{issue}"
+  patterns:
+    - {pattern: '^SSF_Grottan_(?<volume>\\d{4})_(?<issue>[\\d-]+)_(?<year>\\d{4})_webb$', id: "grottan-{volume}-{issue}"}
+    - '^SSF_Grottan_(?<year>\\d{4})[_-](?<issue>[\\d-]+)_webb$'
+`).config
+		if (!c) throw new Error('config')
+		expect(unitId(c, 'SSF_Grottan_0001_2_1967_webb')).toBe('grottan-0001-2')
+		expect(unitId(c, 'SSF_Grottan_0002_2_1967_webb')).toBe('grottan-0002-2')
+		expect(unitId(c, 'SSF_Grottan_1987_2_webb')).toBe('grottan-1987-2')
+		expect(unitInfo(c, 'SSF_Grottan_0001_2_1967_webb')?.year).toBe(1967)
 	})
 	it('selects the source by year', () => {
 		const [a, b] = config?.sources ?? []

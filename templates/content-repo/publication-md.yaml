@@ -22,6 +22,10 @@ sources: []
 #  - {type: gdrive, folder: <Google Drive folder id>, years: 1990-}
 #  - {type: http, base: "https://example.org/pdfs"}
 
+# Google OAuth client ("Desktop app") so contributors can log in with their own Google account:
+# npm run fetch -- login. See publication-md spec/content-repo.md "Google Drive login".
+# google: {clientId: "….apps.googleusercontent.com", clientSecret: "GOCSPX-…"}
+
 # Reference namespaces: this repo's own units, plus entity namespaces you link to.
 refs:
   {{name}}: {title: {{title}}, units: true}

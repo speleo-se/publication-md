@@ -23,6 +23,13 @@ export interface SourceHttp {
 }
 export type Source = SourceGdrive | SourceHttp
 
+/**
+ * A unit-name pattern: a regex string, or `{pattern, id}` when units matching it need their own
+ * id template (e.g. issues numbered by volume rather than year).
+ */
+export type UnitPattern = string | { pattern: string; id?: string }
+const patternOf = (p: UnitPattern) => (typeof p === 'string' ? p : p.pattern)
+
 export interface ContentConfig {
 	config: typeof CONTENT_CONFIG
 	/** Short machine name, also the folder name under the workspace's content/. */
@@ -39,7 +46,7 @@ export interface ContentConfig {
 		 * Regexes (JS syntax, named groups) tried in order; groups `year`, `issue`, `volume`
 		 * drive sorting and display. The first match wins.
 		 */
-		patterns?: string[]
+		patterns?: UnitPattern[]
 		/**
 		 * Template for every unit's id (= `publication.md` `id`), filled from the pattern groups:
 		 * `grottan-{year}-{issue}`. Lets references target units that have no publication.md yet.
@@ -55,6 +62,11 @@ export interface ContentConfig {
 	 * namespaces (`ref/ssf/933.md`), optionally with a URL template (`{id}`) to the authority.
 	 */
 	refs?: Record<string, { title?: string; url?: string; units?: boolean }>
+	/**
+	 * Google OAuth client ("Desktop app") for gdrive sources: users log in with
+	 * `npm run fetch -- login`. A desktop client's secret is not confidential and may be committed.
+	 */
+	google?: { clientId: string; clientSecret?: string }
 	/** Options for the transcription tooling, e.g. `noteLabel`, `alphabet`. */
 	transcribe?: Record<string, unknown>
 	[key: string]: unknown
@@ -102,10 +114,12 @@ export function parseContentConfig(text: string): { config: ContentConfig | null
 		if (!Array.isArray(d.units.patterns)) err('units.patterns must be a list')
 		else
 			for (const p of d.units.patterns) {
+				const re = isObj(p) ? p.pattern : p
+				if (isObj(p) && p.id !== undefined && typeof p.id !== 'string') err('units.patterns[].id must be a string')
 				try {
-					new RegExp(String(p))
+					new RegExp(String(re))
 				} catch {
-					err(`units.patterns: invalid regex ${JSON.stringify(p)}`)
+					err(`units.patterns: invalid regex ${JSON.stringify(re)}`)
 				}
 			}
 	}
@@ -121,6 +135,12 @@ export function parseContentConfig(text: string): { config: ContentConfig | null
 					err(`sources[${i}].years: YYYY, YYYY-YYYY or YYYY-`)
 				}
 			}
+	}
+	if (d.google !== undefined) {
+		const g = d.google
+		if (!isObj(g) || typeof g.clientId !== 'string' || !g.clientId.endsWith('.apps.googleusercontent.com')) {
+			err('google.clientId must be an OAuth client id (….apps.googleusercontent.com)')
+		} else if (g.clientSecret !== undefined && typeof g.clientSecret !== 'string') err('google.clientSecret must be a string')
 	}
 	if (d.refs !== undefined) {
 		if (!isObj(d.refs)) err('refs must map namespace → {title, url}')
@@ -153,7 +173,7 @@ export interface UnitInfo {
 export function unitInfo(config: Pick<ContentConfig, 'units'>, name: string): UnitInfo | null {
 	if (!globToRegExp(config.units.glob).test(name)) return null
 	for (const p of config.units.patterns ?? []) {
-		const g = new RegExp(p).exec(name)?.groups
+		const g = new RegExp(patternOf(p)).exec(name)?.groups
 		if (!g) continue
 		const year = g.year ? Number(g.year) : undefined
 		const issueNo = g.issue ? Number(g.issue.split('-')[0]) : 99
@@ -170,13 +190,16 @@ export function compareUnits(a: UnitInfo, b: UnitInfo): number {
 	return a.sortKey[0] - b.sortKey[0] || a.sortKey[1] - b.sortKey[1] || (a.name < b.name ? -1 : a.name > b.name ? 1 : 0)
 }
 
-/** A unit's id: `units.id` filled from its name's pattern groups, else the name itself. */
+/**
+ * A unit's id: the matching pattern's own `id` template, else `units.id`, filled from the name's
+ * pattern groups; the name itself when there is no template.
+ */
 export function unitId(config: Pick<ContentConfig, 'units'>, name: string): string {
-	const tpl = config.units.id
-	if (!tpl) return name
 	for (const p of config.units.patterns ?? []) {
-		const g = new RegExp(p).exec(name)?.groups
+		const g = new RegExp(patternOf(p)).exec(name)?.groups
 		if (!g) continue
+		const tpl = (typeof p === 'string' ? undefined : p.id) ?? config.units.id
+		if (!tpl) return name
 		let missing = false
 		const id = tpl.replace(/\{(\w+)\}/g, (_, k: string) => {
 			const v = g[k]

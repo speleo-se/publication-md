@@ -47,8 +47,13 @@ push (they commit — show the commands), and optionally add it to `registry.yam
 1. `npm run validate` — the repo must validate (known legacy errors are fine; report them).
 2. **Read the repo's rules folder** (`rules:` in its publication-md.yaml, default `rules/`).
    The `transcribe` skill requires it; summarise to the user what is content-specific.
-3. Source PDFs are gitignored: `npm run fetch -- <unit>` downloads one per the repo's `sources`
-   (gdrive sources need the `gdrive` CLI authenticated once: `gdrive account add`).
+3. Source PDFs are gitignored: `npm run fetch -- <unit>` downloads one per the repo's `sources`.
+   For Google Drive sources the user logs in once with their own Google account:
+   `npm run fetch -- login` (interactive — ask the user to run it with `! npm run fetch -- login`;
+   they open the printed address, log in, and paste the final address back if the redirect page
+   does not load). "Folder not found" means the Drive folder is not shared with that account.
+   If the repo has no `google:` client yet, the owner must create one once (spec/content-repo.md,
+   "Google Drive login") — the gdrive CLI fallback needs a personal Google Cloud client.
 
 ## Other commands
 

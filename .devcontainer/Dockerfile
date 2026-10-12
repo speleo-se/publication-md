@@ -82,7 +82,7 @@ RUN ARCH=$(dpkg --print-architecture) && \
     wget "https://github.com/glotlabs/gdrive/releases/download/${GDRIVE_VERSION}/gdrive_linux-x64.tar.gz" -O /tmp/gdrive.tar.gz && \
     tar xzf /tmp/gdrive.tar.gz -C /usr/local/bin gdrive && rm /tmp/gdrive.tar.gz && chmod +x /usr/local/bin/gdrive; \
   else echo "gdrive: no prebuilt binary for $ARCH, skipped" >&2; fi && \
-  mkdir -p /home/node/.config/gdrive3 && chown -R node:node /home/node/.config/gdrive3
+  mkdir -p /home/node/.config/gdrive3 /home/node/.config/publication-md && chown -R node:node /home/node/.config/gdrive3 /home/node/.config/publication-md
 
 ARG GIT_DELTA_VERSION=0.18.2
 RUN ARCH=$(dpkg --print-architecture) && \

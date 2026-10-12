@@ -20,7 +20,7 @@
 		"subjects": {
 			"type": "array",
 			"description": "What a part/figure is about: reference identities like ssf/933 or grottan/1982-4/p22 (spec §3.5).",
-			"items": { "type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._~-]*(/[A-Za-z0-9][A-Za-z0-9._~-]*){1,2}$" }
+			"items": { "type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9.,_~-]*(/[A-Za-z0-9][A-Za-z0-9.,_~-]*){1,2}$" }
 		},
 		"container": {
 			"type": "object",

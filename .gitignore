@@ -6,3 +6,7 @@ work/*
 !work/.gitkeep
 __pycache__/
 *.pdf
+
+# Claude Code runtime / personal files (project settings in .claude/settings.json ARE committed)
+.claude/*.lock
+.claude/settings.local.json

@@ -25,6 +25,7 @@ export {
 	type Source,
 	sourceCovers,
 	type UnitInfo,
+	type UnitPattern,
 	unitId,
 	unitInfo,
 	versionMessage,
@@ -40,7 +41,7 @@ export {
 	type RefEntry,
 	resolveLabel,
 } from './corpus.ts'
-export { findLinks, type LinkHit, parseRef, parseSubject, type RefTarget, refId, refPath } from './refs.ts'
+export { findLinks, type LinkHit, parseRef, parseSubject, type RefNamespaces, type RefTarget, refId, refNamespaceOf, refPath } from './refs.ts'
 export {
 	bumpVersion,
 	compareVersions,

@@ -29,7 +29,7 @@ export interface RefNamespaces {
 }
 
 const RE_REF = /(?:^|\/)ref\/((?:[^/]+\/){1,2}[^/]+)\.md$/
-const RE_SEG = /^[A-Za-z0-9][A-Za-z0-9._~-]*$/
+const RE_SEG = /^[A-Za-z0-9][A-Za-z0-9.,_~-]*$/
 
 /**
  * Parse a `ref/<namespace>/…/<id>.md` path (any leading `../`). Returns null for links that are

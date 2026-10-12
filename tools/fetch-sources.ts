@@ -5,8 +5,11 @@
  *
  *   node tools/fetch-sources.ts <unit…> [--dry-run] [--content <name>]
  *   node tools/fetch-sources.ts --missing            # every unit folder whose PDF is absent
+ *   node tools/fetch-sources.ts login                # log in with your Google account (gdrive sources)
  *
- * gdrive sources use the glotlabs `gdrive` CLI (authenticate once: `gdrive account add`;
+ * gdrive sources: when the content repo names a Google OAuth client (`google:` in
+ * publication-md.yaml), each user logs in once with `npm run fetch -- login` and the Drive API is
+ * used directly (tools/google.ts). Without it, the glotlabs `gdrive` CLI is used (`gdrive account add`;
  * binary overridable with GDRIVE_BIN). http sources fetch `<base>/<unit>.pdf`.
  * PDFs land beside the unit folders (`<content>/<unit>.pdf`, gitignored there).
  */
@@ -15,16 +18,31 @@ import { existsSync, mkdtempSync, readdirSync, renameSync, rmSync, writeFileSync
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { type Source, sourceCovers, unitInfo } from '../lib/src/index.ts'
+import { download, findInFolder, login } from './google.ts'
 import { findUnits, workspaceFromArgs } from './units.ts'
 
 const GDRIVE = process.env['GDRIVE_BIN'] ?? 'gdrive'
 const argv = process.argv.slice(2)
 const ws = workspaceFromArgs(argv)
+const google = ws.config.google
+if (argv[0] === 'login') {
+	if (!google) {
+		console.error(`${ws.name}: publication-md.yaml has no google: {clientId, clientSecret} — see spec/content-repo.md "Google Drive login"`)
+		process.exit(1)
+	}
+	try {
+		await login(google)
+		process.exit(0)
+	} catch (e) {
+		console.error(e instanceof Error ? e.message : e)
+		process.exit(1)
+	}
+}
 const dryRun = argv.includes('--dry-run')
 const missing = argv.includes('--missing')
 const tokens = argv.filter((a) => !a.startsWith('--'))
 if (!tokens.length && !missing) {
-	console.error('usage: fetch-sources.ts <unit…> | --missing  [--dry-run] [--content <name>]')
+	console.error('usage: fetch-sources.ts <unit…> | --missing | login  [--dry-run] [--content <name>]')
 	process.exit(2)
 }
 const sources = ws.config.sources ?? []
@@ -52,6 +70,13 @@ function gdriveList(folder: string): Map<string, string> {
 
 async function fetchFrom(source: Source, unit: string, dest: string): Promise<boolean> {
 	const file = `${unit}.pdf`
+	if (source.type === 'gdrive' && google) {
+		const id = await findInFolder(google, source.folder, file)
+		if (!id) return false
+		console.log(`  Google Drive ${source.folder}: ${file} (${id})`)
+		if (!dryRun) writeFileSync(dest, await download(google, id))
+		return true
+	}
 	if (source.type === 'gdrive') {
 		const id = gdriveList(source.folder).get(file)
 		if (!id) return false
@@ -81,7 +106,14 @@ const units = missing
 			.filter((d) => d.endsWith('-content'))
 			.map((d) => d.replace(/-content$/, ''))
 			.filter((u) => !existsSync(join(ws.contentRoot, `${u}.pdf`)))
-	: findUnits(ws, tokens).map((d) => d.replace(/-content$/, ''))
+	: (() => {
+			try {
+				return findUnits(ws, tokens).map((d) => d.replace(/-content$/, ''))
+			} catch (e) {
+				console.error(e instanceof Error ? e.message : e)
+				process.exit(1)
+			}
+		})()
 
 let failed = 0
 for (const unit of units) {

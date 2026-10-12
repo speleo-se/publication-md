@@ -27,6 +27,10 @@ README.md                    what the content is, who owns it, how to work on it
 The repo's `.gitignore` should contain `*.pdf` and `*-content/img/` (generated images).
 `ref/` is generated too but **committed**, so reference links work on GitHub; keep it current
 with `npm run refs` (`npm run refs -- --check` fails when it is stale — usable in CI).
+`STATS.md` (`npm run stats`) reports text measures plus figures, reference links (and how many are
+still unresolved), subjects and the size of the extracted images. Image size can only be measured
+where `img/` exists; elsewhere (CI, fresh clones) the last committed value is kept, so every
+machine writes the same file.
 
 ## `publication-md.yaml`
 
@@ -43,6 +47,7 @@ with `npm run refs` (`npm run refs -- --check` fails when it is stale — usable
 | `units.patterns` | | Regexes (JavaScript syntax) with named groups `year`, `issue`, `volume`, tried in order; they drive sorting (year, first issue number, name), reports and source selection. |
 | `units.id` | | Template for each unit's id from the pattern groups, e.g. `grottan-{year}-{issue}`; lets references target units without a `publication.md`. With a units namespace `grottan`, the id must start with `grottan-`. |
 | `sources` | | Where the source PDFs live, tried in order (below). |
+| `google` | | Google OAuth client for Drive sources: `{clientId, clientSecret}` of a *Desktop app* client (below). |
 | `refs` | | Reference namespaces (spec §3.5): `<ns>: {title, url?, units?}`. `units: true` = this repo's units (`grottan: {title: Grottan, units: true}` → `ref/grottan/1982-4.md` is unit `grottan-1982-4`); otherwise an entity namespace, `url` with `{id}` (e.g. `ssf: {title: "SSF:s riksnummer"}`). |
 | `rules` | | Folder of content-specific rules (default `rules`). |
 | `transcribe` | | Options for the transcription tooling: `noteLabel` (label of transcription notes), `alphabet` (extra letters of the language). |
@@ -58,10 +63,41 @@ sources:
   - {type: http, base: https://example.org/pdfs}       # fetches <base>/<unit>.pdf
 ```
 
+### Google Drive login
+
+With a `google:` client in the config, every contributor logs in with **their own Google
+account** — no Google Cloud setup on their side:
+
+```bash
+npm run fetch -- login        # opens Google's login in the browser, once per machine/container
+npm run fetch -- <unit>       # downloads <unit>.pdf from the configured Drive folders
+```
+
+They see exactly what is shared with their account, so **share the Drive folders** (Viewer) with
+each contributor's Google account, or with a Google group they belong to. In a devcontainer VS Code
+forwards the login's local port; if the browser ends on a page that does not load, paste that
+address into the terminal. The token is kept in `~/.config/publication-md/` (a devcontainer volume).
+
+One-time setup by the content owner, in a Google Cloud project:
+
+1. *APIs & Services → Library*: enable the **Google Drive API**.
+2. *OAuth consent screen*: user type **External**; add the scope
+   `https://www.googleapis.com/auth/drive.readonly`. While the app is in **Testing**, add each
+   contributor as a test user (max 100) — or publish it; `drive.readonly` is a restricted scope, so
+   until Google has verified the app, users see an "unverified app" warning they can click through.
+3. *Credentials → Create OAuth client ID → Desktop app*. Put its id and secret in
+   `publication-md.yaml`:
+   ```yaml
+   google: {clientId: "…apps.googleusercontent.com", clientSecret: "GOCSPX-…"}
+   ```
+   For a desktop client Google does not treat the secret as confidential (it ships with every copy
+   of the program), so it may be committed to the content repo.
+
+Without `google:`, gdrive sources fall back to the [gdrive CLI](https://github.com/glotlabs/gdrive),
+which needs every user to create their own client — fine for one maintainer, not for members.
+
 `years` (`YYYY`, `YYYY-YYYY`, `YYYY-`) limits a source to units whose `year` (from
-`units.patterns`) falls in the range. A unit's PDF is looked up as `<unit>.pdf`. `gdrive`
-sources use the [gdrive CLI](https://github.com/glotlabs/gdrive) with the user's own account,
-so private folders work for whoever has been given access.
+`units.patterns`) falls in the range. A unit's PDF is looked up as `<unit>.pdf`.
 
 ## Automation (GitHub Actions)
 

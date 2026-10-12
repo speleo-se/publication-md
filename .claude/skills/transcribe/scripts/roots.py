@@ -46,7 +46,8 @@ def _py_regex(p):
     return re.compile(re.sub(r"\(\?<(?![=!])", "(?P<", p))
 
 
-_PATTERNS = [_py_regex(p) for p in _UNITS.get("patterns", [])]
+# A pattern is a regex string or {pattern, id}.
+_PATTERNS = [_py_regex(p["pattern"] if isinstance(p, dict) else p) for p in _UNITS.get("patterns", [])]
 
 
 def is_unit(name):
