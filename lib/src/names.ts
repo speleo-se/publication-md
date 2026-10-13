@@ -26,8 +26,17 @@ export interface NameEntry {
 
 export type NameIndex = Map<string, NameEntry>
 
-/** Normalised lookup key of a printed name: NFC, lower case, collapsed whitespace. */
-export const nameKey = (s: string) => s.normalize('NFC').toLowerCase().replace(/\s+/g, ' ').trim()
+/**
+ * Normalised lookup key of a printed name: NFC, lower case, collapsed whitespace, without a
+ * trailing parenthesised catalogue number that is part of the link text ("Frubergsgrytet (B4)").
+ */
+export const nameKey = (s: string) =>
+	s
+		.normalize('NFC')
+		.toLowerCase()
+		.replace(/\s+/g, ' ')
+		.replace(/ \([a-zåäö]{1,2} ?\d+[a-z]?\)$/, '')
+		.trim()
 
 export function parseNames(text: string, file = 'names'): { entries: NameEntry[]; index: NameIndex; problems: Problem[] } {
 	const problems: Problem[] = []

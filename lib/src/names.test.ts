@@ -18,6 +18,7 @@ describe('names files', () => {
 		expect(problems).toEqual([])
 		expect(index.get(nameKey('SOTSBÄCKSGROTTANS'))?.id).toBe('1751')
 		expect(index.get(nameKey('sotbäcksgrottan'))?.id).toBe('1751') // NFD input
+		expect(index.get(nameKey('Sotbäcksgrottan (B4)'))?.id).toBe('1751') // Tell number in the link text
 	})
 	it('rejects bad entries', () => {
 		const p = parseNames('- printed: [A]\n- printed: [B]\n  id: 1\n  candidates: [2]\n- printed: [a]\n  id: 3\n').problems.map((x) => x.message)

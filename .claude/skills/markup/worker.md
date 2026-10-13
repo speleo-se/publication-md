@@ -86,6 +86,8 @@ Never let extract.sh overwrite an existing `text-clean/` — check it first; if 
      starting there, the context (title, subject) when several short parts share the page. Keep a
      page link only for a real page reference: a continuation within the unit ("forts sid 5",
      "nästa sida"), a range spanning several articles, or a target unit not marked up yet.
+   - **A catalogue number printed with the name** (e.g. a Tell number in parentheses) goes inside
+     the link text: `[Frubergsgrytet (B4)](…)`. Names files are looked up without it.
    - **Only names go in the names file.** A descriptive phrase ("en grotta", "grottan", "a cave on the
      island") may be linked in place when the context identifies the cave, but never becomes a fixed
      entry — at most `candidates` with a hint.
