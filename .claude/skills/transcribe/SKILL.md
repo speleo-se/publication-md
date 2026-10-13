@@ -42,6 +42,10 @@ unit, report, and stop. Never start the following unit unprompted.
 (The worked examples below come from the first corpus done this way, *Grottan* — Swedish
 caving magazine, 1966–. They illustrate the method; they are not rules for other content.)
 
+## Never git commit
+"Commit to disk" below means writing the ledger file — never `git commit`. The user reviews and
+commits the content repo themselves (the pre-commit hook regenerates `ref/` and `STATS.md`).
+
 ## Work sequentially — one group at a time
 
 Units now run 40+ pages. **Dispatch exactly ONE subagent at a time and wait for
