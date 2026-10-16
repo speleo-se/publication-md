@@ -5,6 +5,10 @@ description: Extract clean, proofread, correctly-ordered plain text from a PDF (
 
 # /pdf-extract — extract clean, ordered per-page text from a PDF
 
+> **In publication-md** (the `transcribe` skill) extract.sh only renders (`pages/`, `text/`) and
+> the page files are written straight into the content repo's `<unit>-content/` — the only copy.
+> The `text-clean/` folder below is for standalone use of this skill.
+
 Produces, under `tmp/pdf-extract/<document name>/text-clean/`, one markdown file
 per page (`pageIndex-<III>.md`, **III = 0-based page index**, 3-digit zero-padded:
 first page → `pageIndex-000.md`), containing the page's text **cleaned, proofread,
@@ -28,7 +32,7 @@ bash <skill-dir>/scripts/extract.sh "$ARGUMENTS"
 Derives `<document name>`, downloads/copies to `original.pdf`, and writes:
 - `pages/page-NN.png` — one image per page (source page NN is **1-based**).
 - `text/page-NN.md` — raw text per page in natural reading order (plain `pdftotext`; `tesseract` for image-only scans). This is a *starting point*, not trusted for order.
-- `text-clean/` — empty, to be filled.
+- `text-clean/` — standalone only: create it and fill it (`mkdir text-clean`).
 - `meta.env` — `KIND`, `HAS_TEXT_LAYER`, `PAGES`, `DPI`.
 
 Read `PAGES` from `meta.env`. **Mapping:** source page `NN` (1-based) → output

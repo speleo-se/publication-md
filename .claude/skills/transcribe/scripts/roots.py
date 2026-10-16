@@ -77,3 +77,63 @@ def require_work():
     if not WORK.is_dir():
         sys.exit(f"no render tree at {WORK}\nRender a unit first, from the publication-md root:\n  {RENDER_HINT}")
     return WORK
+
+
+# Navigation lines (spec §3.6, `npm run nav`): generated prev/next links that only the
+# deliverable carries. Mirror of lib/src/nav.ts stripNav — compare work copy and deliverable
+# with them removed.
+_NAV = re.compile(r"^\[.*\) <!-- nav: generated -->$")
+
+
+def strip_nav(text):
+    if "<!-- nav: generated -->" not in text:
+        return text
+    lines = text.split("\n")
+    while lines and _NAV.match(lines[0]):
+        lines.pop(0)
+        if lines and lines[0] == "":
+            lines.pop(0)
+    trailing = lines and lines[-1] == ""
+    if trailing:
+        lines.pop()
+    while lines and _NAV.match(lines[-1]):
+        lines.pop()
+        if lines and lines[-1] == "":
+            lines.pop()
+    body = [ln for ln in lines if not _NAV.match(ln)]
+    if trailing:
+        body.append("")
+    return "\n".join(body)
+
+
+def same_page(work_file, deliverable_file):
+    """True when the deliverable page equals the work copy, navigation lines (and the final
+    newline they bring) aside."""
+    try:
+        a = Path(work_file).read_text(encoding="utf-8")
+        b = Path(deliverable_file).read_text(encoding="utf-8")
+    except OSError:
+        return False
+    return a.rstrip("\n") == strip_nav(b).rstrip("\n")
+
+
+def run_nav(unit_folder):
+    """Write the navigation lines of one deliverable folder (`npm run nav -- <folder>`)."""
+    r = subprocess.run(["node", str(ROOT / "tools" / "nav.ts"), unit_folder],
+                       capture_output=True, text=True, cwd=ROOT)
+    return r.returncode == 0, (r.stdout + r.stderr).strip()
+
+
+def pages_dir(unit):
+    """The ONE place a unit's page text lives: the deliverable <CONTENT>/<unit>-content/.
+    (There is no separate work copy any more; work/<unit>/ holds the render, raw text and ledger.)"""
+    return CONTENT / f"{unit}-content"
+
+
+_CORRECTION = re.compile(r" ?\([^()|\n]*\)<!-- toc: correction -->")
+
+
+def read_page(path):
+    """A page file's text as printed: without generated navigation lines and TOC corrections
+    (mirror of lib/src/nav.ts stripGenerated)."""
+    return _CORRECTION.sub("", strip_nav(Path(path).read_text(encoding="utf-8")))

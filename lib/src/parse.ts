@@ -1,11 +1,14 @@
 import { parse as parseYaml } from 'yaml'
 import { parseImagePath } from './imagePath.ts'
+import { stripGenerated } from './nav.ts'
 import type { Block } from './types.ts'
 
 const RE_FRONTMATTER = /^---\r?\n([\s\S]*?)\r?\n---(?:\r?\n|$)/
 const RE_COMMENT = /<!--([\s\S]*?)-->/g
 const RE_LEGACY_PAGE = /^\s*page\s+(\d+)\s*$/
 const RE_STRUCTURED = /^\s*(page|part|figure|note):\s*([\s\S]*?)\s*$/
+const RE_NAV = /^\s*nav:\s*generated\s*$/
+const RE_CORRECTION = /^\s*toc:\s*correction\s*$/
 const RE_IMAGE = /!\[([^\]]*)\]\(([^)\s]+)\)/g
 
 /** Split a file into its YAML frontmatter (parsed) and body. Throws on invalid YAML. */
@@ -32,6 +35,15 @@ export function parseBlocks(text: string, file: string): Block[] {
 	for (const m of text.matchAll(RE_COMMENT)) {
 		const inner = m[1] ?? ''
 		const loc = { file, line: lineAt(text, m.index) }
+		if (RE_CORRECTION.test(inner)) {
+			found.push({ offset: m.index, block: { kind: 'toc-correction', loc } })
+			continue
+		}
+		const nav = RE_NAV.exec(inner)
+		if (nav) {
+			found.push({ offset: m.index, block: { kind: 'nav', loc } })
+			continue
+		}
 		const legacy = RE_LEGACY_PAGE.exec(inner)
 		if (legacy) {
 			found.push({ offset: m.index, block: { kind: 'legacy-page', label: legacy[1] ?? '', loc } })
@@ -79,7 +91,7 @@ export function parseBlocks(text: string, file: string): Block[] {
 	return found.sort((a, b) => a.offset - b.offset).map((f) => f.block)
 }
 
-/** Remove every comment block, leaving the reading text (markdown) of a page. */
+/** Remove navigation lines and every comment block, leaving the reading text (markdown) of a page. */
 export function stripComments(text: string): string {
-	return text.replace(/[ \t]*<!--[\s\S]*?-->[ \t]*\r?\n?/g, '')
+	return stripGenerated(text).replace(/[ \t]*<!--[\s\S]*?-->[ \t]*\r?\n?/g, '')
 }

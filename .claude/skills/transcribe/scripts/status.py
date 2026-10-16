@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 """Report which units of the active content repo are transcribed, and which one is next.
 
-An issue is DONE when text-clean/ holds one pageIndex-NNN.md per page image AND
-the deliverable folder is byte-identical to it. The critical check is PLACEHOLDER:
+An issue is DONE when its page files (the deliverable <name>-content/, the only copy of the
+text) hold one pageIndex-NNN.md per page image, none still raw OCR. The critical check is
+PLACEHOLDER:
 many content folders were pre-seeded with raw unproofread OCR that is byte-identical
 to text/page-NN.md. That is NOT processed output and must be redone.
 
@@ -14,21 +15,20 @@ Usage:
 """
 
 import argparse
-import filecmp
 import json
 import sys
 
-from roots import WORK as SRC, CONTENT as DST, NAME, is_unit, sort_key
+from roots import WORK as SRC, CONTENT as DST, NAME, is_unit, read_page, sort_key
 
 # Unit naming and ordering come from the content repo's publication-md.yaml (units.glob /
 # units.patterns), via roots.is_unit / roots.sort_key.
 
 
 def is_raw_copy(f, d):
-    """True when a written page is byte-identical to the unproofread OCR."""
+    """True when a written page is (navigation lines aside) identical to the unproofread OCR."""
     idx = int(f.stem.split("-")[1])
     raw = d / "text" / f"page-{idx + 1:02d}.md"
-    return raw.is_file() and filecmp.cmp(f, raw, shallow=False)
+    return raw.is_file() and read_page(f).rstrip("\n") == raw.read_text(encoding="utf-8").rstrip("\n")
 
 
 def classify(d):
@@ -44,14 +44,12 @@ def classify(d):
         extra = f"; deliverable already holds {have} pages" if have else ""
         return "NO_PAGES", f"no page images — render first, see Step 0a{extra}"
 
-    clean = d / "text-clean"
-    cleans = sorted(clean.glob("pageIndex-*.md")) if clean.is_dir() else []
     dst = DST / f"{d.name}-content"
     dsts = sorted(dst.glob("pageIndex-*.md")) if dst.is_dir() else []
 
-    # Real (non-raw) work already sitting in text-clean/ — this is what a crashed
-    # session leaves behind, and it must never be reported as "nothing done".
-    real = sum(1 for f in cleans if not is_raw_copy(f, d))
+    # Real (non-raw) work already in the page files — what a crashed session leaves behind,
+    # and it must never be reported as "nothing done".
+    real = sum(1 for f in dsts if not is_raw_copy(f, d))
 
     # An unfinished work ledger outranks everything: it says exactly where to resume.
     plan_file = d / ".transcribe" / "plan.json"
@@ -68,25 +66,15 @@ def classify(d):
             pass
 
     # Placeholder check: deliverable byte-identical to the raw OCR layer.
-    raw_ident = sum(1 for f in dsts if is_raw_copy(f, d))
-    salvage = f"; text-clean already holds {real}/{n} transcribed pages" if real else ""
-    if dsts and raw_ident == len(dsts):
-        return ("PLACEHOLDER",
-                f"all {len(dsts)} deliverable pages are raw OCR — must be redone{salvage}")
+    if not dsts:
+        return "TODO", f"{n} pages, no page files yet"
+    raw_ident = len(dsts) - real
+    if raw_ident == len(dsts):
+        return "PLACEHOLDER", f"all {len(dsts)} page files are raw OCR — must be redone"
     if raw_ident:
-        return "PARTIAL", f"{raw_ident}/{len(dsts)} deliverable pages are still raw OCR{salvage}"
-
-    if not cleans:
-        return "TODO", f"{n} pages, no text-clean/"
-    if len(cleans) != n:
-        return "PARTIAL", f"text-clean has {len(cleans)}/{n} pages ({real} transcribed)"
+        return "PARTIAL", f"{raw_ident}/{len(dsts)} page files are still raw OCR"
     if len(dsts) != n:
-        return "UNSYNCED", f"text-clean complete ({n}), deliverable has {len(dsts)}"
-    match, mismatch, errors = filecmp.cmpfiles(
-        clean, dst, [f.name for f in cleans], shallow=False
-    )
-    if mismatch or errors:
-        return "UNSYNCED", f"{len(mismatch) + len(errors)} page(s) differ from deliverable"
+        return "PARTIAL", f"{len(dsts)}/{n} page files ({real} transcribed)"
     return "DONE", f"{n} pages"
 
 
@@ -118,8 +106,8 @@ def main():
         for d in hits:
             state, detail = classify(d)
             print(f"{state:<12} {d.name}  ({detail})")
-            print(f"  src: {d}/text-clean")
-            print(f"  dst: {DST / (d.name + '-content')}")
+            print(f"  pages: {DST / (d.name + '-content')}")
+            print(f"  render: {d}")
         return
 
     rows = [(d, *classify(d)) for d in dirs]
@@ -147,8 +135,8 @@ def main():
     print(f"\nNEXT: {d.name}")
     print(f"  state: {state} ({detail})")
     print(f"  pages: {len(list((d / 'pages').glob('page-*.png')))}")
-    print(f"  src:   {d}/text-clean")
-    print(f"  dst:   {DST / (d.name + '-content')}")
+    print(f"  pages:  {DST / (d.name + '-content')}")
+    print(f"  render: {d}")
     if len(todo) > 1:
         print(f"  then:  {todo[1][0].name}")
 

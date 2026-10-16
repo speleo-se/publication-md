@@ -5,9 +5,10 @@
  * user does not have to pull after every push.
  *
  *   node tools/hooks.ts pre-commit --content-root <dir>
- *       regenerate ref/ and STATS.md and add them to the commit being made
+ *       write navigation lines (`nav.ts`), regenerate ref/ and STATS.md, and add them to the
+ *       commit being made
  *   node tools/hooks.ts pre-push --content-root <dir>
- *       validate and check that ref/ is current; a failure blocks the push
+ *       validate and check that ref/ and the navigation lines are current; a failure blocks the push
  *
  * Bypass either with `git commit/push --no-verify`. The generators read the working tree, so
  * stage everything you mean to commit (unstaged edits to pages also feed into ref/).
@@ -37,6 +38,17 @@ switch (hook) {
 	case 'pre-commit': {
 		const staged = git('diff', '--cached', '--name-only').stdout.split('\n').filter(Boolean)
 		if (!staged.some((p) => RELEVANT.test(p))) process.exit(0) // README-only etc.: nothing to regenerate
+		// Navigation lines. A page file is staged after `nav` only when it had no unstaged edits
+		// before (else `git add` would sweep those edits into the commit); the rest are reported.
+		const dirty = new Set(git('diff', '--name-only').stdout.split('\n').filter(Boolean))
+		const nav = tool('nav.ts')
+		if (nav.status !== 0) fail(`nav failed:\n${nav.stderr}`)
+		const navved = git('diff', '--name-only').stdout.split('\n').filter((p) => p && !dirty.has(p) && /-content\/pageIndex-\d+\.md$/.test(p))
+		if (navved.length) {
+			const a = git('add', '--', ...navved)
+			if (a.status !== 0) fail(a.stderr)
+			console.log(`publication-md: navigation lines updated and staged in ${navved.length} page file(s)`)
+		}
 		const refs = tool('refs.ts')
 		if (refs.status !== 0) {
 			process.stderr.write(refs.stderr)
@@ -64,6 +76,11 @@ switch (hook) {
 		if (r.status !== 0) {
 			process.stderr.write(r.stdout)
 			fail('ref/ is out of date — run `npm run refs` in publication-md and commit the result')
+		}
+		const nv = tool('nav.ts', '--check')
+		if (nv.status !== 0) {
+			process.stderr.write(nv.stdout)
+			fail('navigation lines are missing or stale — run `npm run nav` in publication-md and commit the result')
 		}
 		const n = tool('refs.ts', 'names')
 		if (n.status !== 0) {

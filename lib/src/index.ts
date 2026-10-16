@@ -1,6 +1,29 @@
 export { formatImagePath, iou, parseImagePath } from './imagePath.ts'
 export { parseBlocks, parseFrontmatter, stripComments } from './parse.ts'
 export {
+	applyNav,
+	isNavLine,
+	NAV_LABELS,
+	NAV_MARK,
+	NAV_POSITIONS,
+	type NavLabels,
+	type NavPosition,
+	navLines,
+	stripNav,
+	stripCorrections,
+	stripGenerated,
+	applyCorrections,
+	CORRECTION_MARK,
+	type TocCorrection,
+	stripToc,
+	applyToc,
+	TOC_END,
+	TOC_START,
+	tocBlock,
+	type TocPosition,
+	TOC_POSITIONS,
+} from './nav.ts'
+export {
 	extractRegionImage,
 	type PdfiumLibraryLike,
 	type RegionImage,

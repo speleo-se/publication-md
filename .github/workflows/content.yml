@@ -76,12 +76,15 @@ jobs:
       - name: Check generated files (pull requests)
         if: github.event_name == 'pull_request'
         working-directory: pmd
-        run: node tools/refs.ts --check
+        run: |
+          node tools/refs.ts --check
+          node tools/nav.ts --check
 
-      - name: Regenerate ref/ and STATS.md
+      - name: Regenerate navigation lines, ref/ and STATS.md
         if: github.event_name != 'pull_request'
         working-directory: pmd
         run: |
+          node tools/nav.ts
           node tools/refs.ts
           node tools/stats.ts
 
@@ -93,12 +96,12 @@ jobs:
         run: |
           # A STATS.md whose only change is its "Generated <date>" line is not worth a commit.
           if git diff --quiet -I '^(Genererad|Generated) ' -- STATS.md; then git checkout -- STATS.md 2>/dev/null || true; fi
-          git add -A ref STATS.md
+          git add -A -- ref STATS.md '*-content/pageIndex-*.md'
           if git diff --cached --quiet; then
             echo "Generated files are current."
             exit 0
           fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git commit -m "Regenerate ref/ and STATS.md (publication-md ${{ inputs.publication-md-ref }})"
+          git commit -m "Regenerate navigation, ref/ and STATS.md (publication-md ${{ inputs.publication-md-ref }})"
           git push

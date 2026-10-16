@@ -85,6 +85,13 @@ export interface ContentConfig {
 	 * the user by `content add`: `claude mcp add --transport http <name> <url>`.
 	 */
 	mcp?: { name: string; url: string; purpose?: string }[]
+	/**
+	 * Navigation lines (previous/next page links for reading on GitHub, `npm run nav`): where they
+	 * go in each deliverable page file. Default `bottom`; `none` removes them. `toc`: where
+	 * the generated table of contents goes in each `publication.md` — `top` (before the body
+	 * text), `bottom` (after it, the default) or `none`.
+	 */
+	nav?: { position?: 'bottom' | 'top' | 'both' | 'none'; toc?: 'top' | 'bottom' | 'none' }
 	/** Options for the transcription tooling, e.g. `noteLabel`, `alphabet`. */
 	transcribe?: Record<string, unknown>
 	[key: string]: unknown
@@ -163,6 +170,16 @@ export function parseContentConfig(text: string): { config: ContentConfig | null
 	if (d.mcp !== undefined) {
 		if (!Array.isArray(d.mcp) || d.mcp.some((m) => !isObj(m) || typeof m.name !== 'string' || typeof m.url !== 'string' || !/^https:\/\//.test(m.url))) {
 			err('mcp must be a list of {name, url: https://…, purpose?}')
+		}
+	}
+	if (d.nav !== undefined) {
+		const n = d.nav
+		if (
+			!isObj(n) ||
+			(n.position !== undefined && !['bottom', 'top', 'both', 'none'].includes(String(n.position))) ||
+			(n.toc !== undefined && !['top', 'bottom', 'none'].includes(String(n.toc)))
+		) {
+			err('nav must be {position?: bottom | top | both | none, toc?: top | bottom | none}')
 		}
 	}
 	if (d.refs !== undefined) {

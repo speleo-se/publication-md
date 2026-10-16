@@ -13,7 +13,8 @@ grouping, each group's state, its review score and any notes the next agent need
     python3 plan.py 1992_4 mark 4 reviewed --score 9
     python3 plan.py 1992_4 mark 4 done
     python3 plan.py 1992_4 phase join             # record that --join has been run
-    python3 plan.py 1992_4 phase sync
+    python3 plan.py 1992_4 phase sync             # record the final finalize.py run (name kept
+                                                  # for old ledgers; nothing is copied any more)
 
 init stdin format — one group per line, "<pages> <label>", in page order:
 
@@ -26,7 +27,6 @@ Every page image must be covered exactly once; init refuses an incomplete plan.
 """
 
 import argparse
-import filecmp
 import json
 import sys
 from datetime import datetime, timezone
@@ -51,7 +51,7 @@ def page_files(d, n):
     """(image, raw, output) for 1-based scan number n."""
     return (d / "pages" / f"page-{n:02d}.png",
             d / "text" / f"page-{n:02d}.md",
-            d / "text-clean" / f"pageIndex-{n - 1:03d}.md")
+            roots.pages_dir(d.name) / f"pageIndex-{n - 1:03d}.md")
 
 
 def page_state(d, n):
@@ -59,7 +59,7 @@ def page_state(d, n):
     img, raw, out = page_files(d, n)
     if not out.is_file():
         return "none"
-    if raw.is_file() and filecmp.cmp(out, raw, shallow=False):
+    if raw.is_file() and roots.read_page(out).rstrip("\n") == raw.read_text(encoding="utf-8").rstrip("\n"):
         return "placeholder"
     return "clean"
 
@@ -151,8 +151,8 @@ def cmd_survey(d, a):
         head = ""
         if raw.is_file():
             head = " ".join(raw.read_text(errors="replace")[:a.chars].split())
-        flag = {"none": "", "placeholder": "  [text-clean is still raw OCR]",
-                "clean": "  [text-clean written]"}[page_state(d, i)]
+        flag = {"none": "", "placeholder": "  [page file is still raw OCR]",
+                "clean": "  [page file written]"}[page_state(d, i)]
         print(f"=== page-{i:02d}  ({size} B raw){flag}\n{head}\n")
 
 
@@ -216,7 +216,7 @@ def cmd_next(d, a):
         if not plan["phases"]["join"]:
             print("NEXT ACTION: finalize.py --join  (step 3)")
         elif not plan["phases"]["sync"]:
-            print("NEXT ACTION: finalize.py --sync  (step 4)")
+            print("NEXT ACTION: finalize.py  (step 4), then plan.py … phase sync")
         else:
             print("NEXT ACTION: report and stop")
         return

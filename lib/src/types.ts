@@ -143,6 +143,8 @@ export type Block =
 	| { kind: 'figure'; value: unknown; loc: Loc }
 	| { kind: 'note'; value: unknown; loc: Loc }
 	| { kind: 'image'; alt: string; src: string; ref: ImageRef | null; loc: Loc }
+	| { kind: 'nav'; loc: Loc }
+	| { kind: 'toc-correction'; loc: Loc }
 	| { kind: 'unknown-comment'; raw: string; loc: Loc }
 	| { kind: 'yaml-error'; block: 'page' | 'part' | 'figure' | 'note'; message: string; loc: Loc }
 

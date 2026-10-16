@@ -2,12 +2,13 @@
 # extract.sh — mechanical extraction for the pdf-extract skill.
 #
 # Downloads/copies a PDF and writes, per page, a page image (for vision) and the raw
-# text in natural reading order. It does NOT build a PDF or run hOCR — the deliverable
-# is a text-clean/ folder the create/review agents fill in.
+# text in natural reading order. It does NOT build a PDF or run hOCR. The cleaned page
+# files are written by the create/review agents — in publication-md straight into the
+# content repo's <unit>-content/ folder (the only copy); standalone, into <out>/text-clean/.
 #
 # Usage:  extract.sh <pdf-path-or-url> [document-name]
 # Output: ${PDF_EXTRACT_OUT:-tmp/pdf-extract}/<document-name>/   (publication-md: PDF_EXTRACT_OUT=work/<content>)
-#           original.pdf  pages/page-NN.png  text/page-NN.md  text-clean/  meta.env
+#           original.pdf  pages/page-NN.png  text/page-NN.md  meta.env
 set -euo pipefail
 
 run() { echo "+ $*" >&2; "$@"; }
@@ -23,7 +24,7 @@ name="${name:-document}"
 
 WORK="${PDF_EXTRACT_OUT:-tmp/pdf-extract}/$name"
 echo "working folder: $WORK" >&2
-run mkdir -p "$WORK/pages" "$WORK/text" "$WORK/text-clean"
+run mkdir -p "$WORK/pages" "$WORK/text"
 
 # --- fetch (temp + move on success; reuse an existing original.pdf on failure) ------
 PDF="$WORK/original.pdf"; tmp="$WORK/original.pdf.download"; ok=false
@@ -82,4 +83,4 @@ done
   echo "PAGES=$pages"; echo "LANGS=$LANGS"; echo "DPI=$RES"; } > "$WORK/meta.env"
 echo >&2
 echo "done. pages=$pages -> $WORK" >&2
-echo "next: per page, create text-clean/pageIndex-<III>.md (III = 0-based index) via create/review agent pairs" >&2
+echo "next: per page, write pageIndex-<III>.md (III = 0-based index) via create/review agent pairs — publication-md: <content>/<unit>-content/" >&2

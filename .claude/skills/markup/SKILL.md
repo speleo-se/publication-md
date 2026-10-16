@@ -21,8 +21,8 @@ Show the user every command you run.
    once. Prompt (fill in the unit and paths from `markup.py <unit>`):
    > You are the markup worker for unit `<UNIT>` of the active publication-md content repo.
    > Follow `.claude/skills/markup/worker.md` exactly (read it first), and the content repo's
-   > `rules/markup.md` (`<CONTENT>/rules/markup.md`). Work copy: `<WORK>/<UNIT>/text-clean`;
-   > deliverable: `<CONTENT>/<UNIT>-content`; run commands from the publication-md root
+   > `rules/markup.md` (`<CONTENT>/rules/markup.md`). Page files (edit in place, the only copy):
+   > `<CONTENT>/<UNIT>-content`; page images: `<WORK>/<UNIT>/pages`; run commands from the publication-md root
    > (`<ROOT>`). Do this one unit only. Reply in ≤ 15 lines as worker.md step 11 says.
 3. **Verify** (cheap, here): `markup.py <unit>` shows MARKED (or BLOCKED);
    `npm run validate -- <unit>` → 0 errors; `npm run refs -- --check` → current;

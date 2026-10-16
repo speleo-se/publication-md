@@ -4,7 +4,24 @@
  */
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs'
 import { basename, join, resolve } from 'node:path'
-import { buildCorpus, type Context, type Corpus, type Problem, parsePeople, type UnitInput } from '../lib/src/index.ts'
+import {
+	applyNav,
+	buildCorpus,
+	type Context,
+	type Corpus,
+	NAV_LABELS,
+	type NavPosition,
+	navLines,
+	type Problem,
+	applyToc,
+	applyCorrections,
+	type TocCorrection,
+	parseBlocks,
+	tocBlock,
+	parseFrontmatter,
+	parsePeople,
+	type UnitInput,
+} from '../lib/src/index.ts'
 import { loadWorkspace, takeContentArg, type Workspace } from './workspace.ts'
 
 /** Resolve the workspace from argv (consumes `--content <name>`). */
@@ -23,7 +40,7 @@ const isDir = (p: string) => existsSync(p) && statSync(p).isDirectory()
 
 /**
  * All `*-content` unit folders of the content repo, or those whose name contains one of the
- * given tokens. A token that is an existing directory path (e.g. a work copy) is used as is.
+ * given tokens. A token that is an existing directory path is used as is.
  */
 export function findUnits(ws: Workspace, tokens: string[]): string[] {
 	const all = readdirSync(ws.contentRoot, { withFileTypes: true })
@@ -80,4 +97,61 @@ export function readCorpus(ws: Workspace): Corpus {
 			: { folder, publication: u.publication, pages: u.pages }
 	})
 	return buildCorpus(inputs, ws.config)
+}
+
+/** Where the content repo wants navigation lines (`nav.position`, default bottom). */
+export const navPosition = (ws: Workspace): NavPosition => ws.config.nav?.position ?? 'bottom'
+
+/**
+ * The files of a unit as they should be with navigation lines and the table of contents in
+ * `publication.md` (`npm run nav`): file name → text. Only the files whose text changes are returned.
+ */
+export function navUpdates(ws: Workspace, unit: UnitInput): Map<string, string> {
+	let title = unit.name.replace(/-content$/, '')
+	try {
+		const t = (parseFrontmatter(unit.publication ?? '')?.data as Record<string, unknown> | undefined)?.title
+		if (typeof t === 'string' && t) title = t
+	} catch {
+		// keep the folder name
+	}
+	const labels = ws.config.language === 'sv' ? NAV_LABELS.sv : NAV_LABELS.en
+	const lines = navLines(unit, title, labels)
+	const parts = unit.pages.flatMap((p) =>
+		parseBlocks(p.text, p.name).flatMap((b) => (b.kind === 'part' ? [{ file: p.name, value: b.value }] : [])),
+	)
+	// Corrections of printed TOC rows that link to this unit's parts (first printed page of each part).
+	let local = ''
+	try {
+		const id = (parseFrontmatter(unit.publication ?? '')?.data as Record<string, unknown> | undefined)?.id
+		if (typeof id === 'string') local = id.replace(/^[^-]+-/, '')
+	} catch {
+		// no id: no corrections
+	}
+	const ns = Object.entries(ws.config.refs ?? {}).find(([, v]) => v?.units)?.[0]
+	const starts = new Map<string, string>()
+	for (const { value: v } of parts) {
+		if (typeof v !== 'object' || v === null || Array.isArray(v)) continue
+		const o = v as Record<string, unknown>
+		if (o.continued === true || typeof o.key !== 'string' || o.pages === undefined) continue
+		const first = String(o.pages).split(/\s*[-–,]\s*/)[0]?.trim()
+		if (first) starts.set(o.key.slice(o.key.indexOf('|') + 1).replace(/\|/g, '~'), first)
+	}
+	const corrections: TocCorrection[] = []
+	const out = new Map<string, string>()
+	for (const p of unit.pages) {
+		let text = p.text
+		if (ns && local) {
+			const r = applyCorrections(text, ns, local, starts, labels.corrected, p.name)
+			text = r.text
+			corrections.push(...r.corrections)
+		}
+		const want = applyNav(text, lines.get(p.name) ?? null, navPosition(ws))
+		if (want !== p.text) out.set(p.name, want)
+	}
+	if (unit.publication !== undefined) {
+		const where = ws.config.nav?.toc ?? 'bottom'
+		const want = applyToc(unit.publication, where === 'none' ? null : tocBlock(unit, parts, labels, corrections), where)
+		if (want !== unit.publication) out.set('publication.md', want)
+	}
+	return out
 }

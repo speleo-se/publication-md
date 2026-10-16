@@ -20,7 +20,7 @@ from pathlib import Path
 from PIL import Image
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "transcribe" / "scripts"))
-from roots import WORK  # noqa: E402
+from roots import CONTENT, WORK  # noqa: E402
 
 SEARCH, PAD, INK, WHITE, THIN = 0.04, 0.008, 140, 0.004, 0.004
 RE = re.compile(r"img/p(\d{3})_pct-([\d.]+),([\d.]+),([\d.]+),([\d.]+)\.jpg")
@@ -100,7 +100,8 @@ def main():
         sys.exit(f"{len(hits)} units match {a.unit!r}")
     d = hits[0]
     flagged = 0
-    for f in sorted((d / "text-clean").glob("pageIndex-*.md")):
+    # Regions live in the page files (the deliverable); measured against the render in WORK.
+    for f in sorted((CONTENT / f"{d.name}-content").glob("pageIndex-*.md")):
         t = f.read_text(encoding="utf-8")
         new = t
         for m in RE.finditer(t):

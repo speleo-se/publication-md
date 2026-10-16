@@ -145,6 +145,7 @@ comment is invalid; use a `note` instead.
 | `<!-- part: {key: K, continued: true} -->` | — | Where an earlier part `K` resumes after another part interrupted it (e.g. a review whose plate follows a short notice). |
 | `<!-- figure: {…} -->` | §3.3 | On the line directly after its image. |
 | `<!-- note: {…} -->` | §3.4 | Where the note applies. |
+| `<!-- nav: generated -->` | §3.6 | At the end of a generated line of navigation links; the whole line is not content. |
 
 ### 3.1 Scope of a part
 
@@ -264,6 +265,66 @@ Choose namespaces whose ids outlive any one database: an authority's own numbers
 *riksnummer* for Swedish caves), Wikidata, GeoNames. A consuming system maps them to its own ids
 on import.
 
+### 3.6 Navigation lines (generated, not content)
+
+To proof-read a unit page by page in an ordinary markdown viewer (GitHub), each page file of the
+**deliverable** may carry a generated line of links to the previous page, the unit and the next
+page:
+
+```markdown
+…the last paragraph of the page.
+
+[⬅️ s. 4](pageIndex-003.md)  │  [📖 Grottan 1987 nr 2](publication.md)  │  [s. 6 ➡️](pageIndex-005.md) <!-- nav: generated -->
+```
+
+- It is **not content**. A consumer removes every line that ends with `<!-- nav: generated -->`
+  — the links included — together with the blank line that
+  separates it from the text (`stripNav` in the reference library). Removing only the comments is
+  not enough: the links would remain.
+- The links are divided by `│` (U+2502) padded with no-break spaces — never `|`, which can start
+  a table. The marker ends the line and the line holds only the links. (It is not put first: a line that
+  starts with `<!--` is an HTML block in CommonMark, and GitHub or VS Code would not render its
+  links.)
+- Labels are the printed labels from `pageSequence` (a spread shows its range), else the PDF page
+  number. The middle link goes to `publication.md`.
+- The content repo decides where the line goes: `nav: {position: bottom | top | both | none}` in
+  `publication-md.yaml`, default `bottom`. `node tools/nav.ts` writes and moves the lines (the
+  pre-commit hook runs it); `--check` reports stale ones. Work copies never carry them.
+- **Table of contents.** `publication.md` carries a generated block — after the body text, or
+  before it (`nav: {toc: top | bottom | none}`, default `bottom`) — every part (from its
+  `part` block, in reading order) linked to the page file where it starts, then a list of all
+  pages:
+
+  ```markdown
+  <!-- toc: start -->
+  ## Innehåll
+
+  | Sid | Artikel | Författare |
+  |---|---|---|
+  | [4–9](pageIndex-003.md) | [Neotektonik och grottor i Sverige](pageIndex-003.md) | Rabbe Sjöberg, *foto:* Josef Wagner |
+
+  **Sidor:** [1](pageIndex-000.md) · [2](pageIndex-001.md) · …
+  <!-- toc: end -->
+  ```
+
+  The markers stand on lines of their own (each is then an HTML block that ends on its line, so
+  the table between them renders). Like navigation lines it is not content: consumers remove
+  everything from `<!-- toc: start -->` to `<!-- toc: end -->` (`stripToc`).
+
+### 3.7 Printed tables of contents
+
+- **Linked.** In a printed contents table (a table after a heading "Innehåll"/"Contents"), the
+  title of each entry whose article exists in the unit is a reference to its part:
+  `| [Korallgrottan — ett nyckelhål …](../ref/grottan/1987-1/part/4-8~1.md) | 4 |`
+  (`node tools/toc-link.ts` proposes and applies unambiguous links). The printed text is unchanged.
+- **Corrected, generated.** When the printed page of a linked entry differs from the part's first
+  printed page, `npm run nav` appends a correction after it:
+  `| [Flanderstöten](…/part/4-7~1.md) | 5 (Rättad: 4)<!-- toc: correction --> |`
+  (`Corrected:` in English). Only the first page counts — a missing entry, or end pages, are not
+  corrections. It is not content: consumers remove `(…)<!-- toc: correction -->`
+  (`stripCorrections`), leaving the cell exactly as printed. Never write one by hand.
+- The generated table of contents (§3.6) lists the corrections under its table.
+
 ## 4. People
 
 A person is a bare name (`Anna Svensson`) or `{name, role}`. `role` is free text; use
@@ -313,11 +374,12 @@ node tools/validate.ts [unit…] [--errors-only]
 ```
 
 Errors: reference links that don't parse or whose unit, page, key or namespace doesn't exist,
-unresolved `subjects`, malformed blocks or YAML, unknown comments (incl. the old `<!-- page N -->` spelling), invalid
+unresolved `subjects`, malformed blocks or YAML, unknown comments (incl. the old `<!-- page N -->` spelling), a `nav` marker that does not end a line of navigation links, invalid
 `pageSequence` or one whose page count differs from the files, page markers that differ from
 `pageSequence` (or, without it, numeric markers out of order), `part.pages` that don't resolve, duplicate part or figure keys, a figure key not ending in `|f<n>`, a figure using the old `id` field,
 figure not directly after an image, image path in `img/` that doesn't parse, missing required fields, unknown `container.id`. Warnings: part/figure keys whose pages segment doesn't resolve in `pageSequence`, unknown keys,
-people not in `people.yaml`, images that are not region references.
+people not in `people.yaml`, images that are not region references, navigation lines that are
+missing, misplaced or stale (§3.6).
 
 ## 7. Versioning
 

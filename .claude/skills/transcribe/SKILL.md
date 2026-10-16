@@ -75,10 +75,14 @@ Two rules keep that promise:
 <WORK>/<UNIT>/text/page-NN.md              # raw extract — a HINT ONLY, order often wrong
 <WORK>/<UNIT>/original.pdf                 # digital units: the character truth, via pagefacts.py
 <WORK>/<UNIT>/meta.env                     # KIND=scanned|digital — decides the rules block
-<WORK>/<UNIT>/text-clean/pageIndex-III.md  # what you write   (III = NN-1, one PHYSICAL page)
 <WORK>/<UNIT>/.transcribe/plan.json        # the work ledger (groups, states, notes)
-<CONTENT>/<UNIT>-content/pageIndex-III.md  # deliverable, byte-identical copy
+<CONTENT>/<UNIT>-content/pageIndex-III.md  # what you write (III = NN-1, one PHYSICAL page) —
+                                           # the deliverable, and the ONLY copy of the text
 ```
+
+The page files have no work copy: write and fix them in place. A page that already exists may
+end with a generated navigation line (`… <!-- nav: generated -->`) — leave it; `finalize.py`
+rewrites it (and the pre-commit hook does too).
 
 `<CONTENT>` is the active content repo (`content/<name>`), `<WORK>` its render tree
 (`work/<name>`); `scripts/roots.py` asks `tools/workspace.ts` for both, so never hardcode
@@ -127,7 +131,7 @@ folio numbers climb by one across the whole unit.
 The only other comments allowed are the **publication-md** metadata blocks —
 single-line `<!-- part: {…} -->`, `<!-- figure: {…} -->`, `<!-- note: {…} -->` with a
 YAML payload (`spec/README.md`). `finalize.py` checks their shape and runs
-`tools/validate.ts` on `text-clean/` (skipped with a notice until `npm install`).
+`tools/validate.ts` on the page files (skipped with a notice until `npm install`).
 
 A scanned unit whose files are each one printed page needs no markers: the TOC number
 resolves straight to a file through `pageSequence`.
@@ -173,10 +177,9 @@ and do NOT redo finished groups — go straight to Step 2 and keep pulling
 > finished and is not. `status.py` detects this. Always confirm the state before
 > assuming a unit needs no work — and say so in your report when you find one.
 
-> **Salvage before you redo.** `status.py` also reports how many `text-clean/` pages
-> are already real transcriptions rather than raw OCR ("text-clean already holds
-> 44/44 transcribed pages"). A pre-ledger session can have died after transcribing
-> and before syncing. That work is good; **do not overwrite it blindly.** Plan the
+> **Salvage before you redo.** `status.py` also reports how many page files are
+> already real transcriptions rather than raw OCR ("44/44 transcribed"). A pre-ledger
+> session can have died mid-unit. That work is good; **do not overwrite it blindly.** Plan the
 > groups as usual, then for every group whose pages are already transcribed, skip
 > the create agent: `mark <n> created --note "pre-existing from an earlier session —
 > unverified"` and send it straight to a review agent. Only pages flagged
@@ -492,13 +495,13 @@ continuing on the next page.
 ## Step 4 — finalize and verify
 
 ```bash
-python3 .claude/skills/transcribe/scripts/finalize.py <UNIT> --sync
+python3 .claude/skills/transcribe/scripts/finalize.py <UNIT>
 python3 .claude/skills/transcribe/scripts/plan.py <UNIT> phase sync
 ```
 
 Checks page count and naming, placeholder pages, soft hyphens, HTML entities/tags,
-malformed table blocks and dangling hyphens; then copies to the deliverable and
-proves byte-identity. Exit 0 = clean. Do not report done until it is, and only record
+malformed table blocks and dangling hyphens in the page files, and writes their navigation
+lines. Exit 0 = clean. (The ledger phase keeps its old name `sync`; nothing is copied.) Do not report done until it is, and only record
 `phase sync` once it exits 0 — that is what flips the unit out of `IN_PROGRESS`.
 
 ## Step 5 — report
@@ -509,8 +512,8 @@ reasoning. Finish with a one-line `result:` headline. Then stop — wait for "Ne
 
 **If you stop before the unit is finished** (usage limit, a blocked group, the user
 interrupting), say so plainly, give `plan.py <UNIT> show` output as the state, and
-name the resume command. Do not report an unfinished unit as done — `finalize.py
---sync` is the only thing that makes a unit done.
+name the resume command. Do not report an unfinished unit as done — `finalize.py`
+exiting 0 (and `phase sync`) is the only thing that makes a unit done.
 
 
 ## Tool quirks that will bite you
@@ -521,7 +524,7 @@ name the resume command. Do not report an unfinished unit as done — `finalize.
   to it in prose instead ("the folio marker for page 43 sits inside the sentence").
 - **A hand-lettered plate's vertical depth/level scale trips the stray-folio check.** Those bare
   numbers are printed content and must NOT be deleted; inline the scale (e.g. as part of the
-  figure note) so both the print and `finalize.py --sync` are satisfied.
+  figure note) so both the print and `finalize.py` are satisfied.
 - **The scanned OCR layer emits each paragraph's bold run and regular run as separate streams,
   in varying order.** On register pages (Grottan's grottblankett register) this makes the raw text look as if
   every entry's number and name belonged to the PREVIOUS entry's data — a fake off-by-one

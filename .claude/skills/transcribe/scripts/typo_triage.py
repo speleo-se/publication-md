@@ -20,7 +20,7 @@ import sys
 from collections import Counter, defaultdict
 from pathlib import Path
 
-from roots import WORK as SRC, TRANSCRIBE
+from roots import CONTENT, TRANSCRIBE, WORK as SRC, read_page
 
 STATUS = Path(__file__).with_name("status.py")
 
@@ -43,11 +43,11 @@ def done_issues():
 
 
 def pages(issue):
-    return sorted((SRC / issue / "text-clean").glob("pageIndex-*.md"))
+    return sorted((CONTENT / f"{issue}-content").glob("pageIndex-*.md"))
 
 
 def tokens(path, skip_notes=True):
-    for lineno, line in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):
+    for lineno, line in enumerate(read_page(path).splitlines(), 1):
         if skip_notes and NOTE.match(line):
             continue
         for m in WORD.finditer(line):
@@ -63,7 +63,7 @@ EN_STOP = {"the", "of", "and", "is", "are", "in", "to", "was", "were", "with",
 
 def english_blocks(path):
     """Yield (lineno, line) for lines that are clearly English prose."""
-    text = path.read_text(encoding="utf-8")
+    text = read_page(path)
     flagged_page = bool(EN_HEAD.search(text))
     for lineno, line in enumerate(text.splitlines(), 1):
         if NOTE.match(line) or not line.strip():

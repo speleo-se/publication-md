@@ -16,21 +16,19 @@ types map, and which reference namespaces exist. Where it and this file differ, 
 ## Paths
 ```
 python3 .claude/skills/markup/scripts/markup.py [<unit>|--list]   # state, paths, NEXT
-<WORK>/<UNIT>/text-clean/pageIndex-NNN.md    # EDIT HERE (work copy)
+<CONTENT>/<UNIT>-content/pageIndex-NNN.md    # EDIT HERE — the only copy of the text
+<CONTENT>/<UNIT>-content/publication.md       # written here too
 <WORK>/<UNIT>/pages/page-NN.png              # 1-based page images (regions are read here)
-<CONTENT>/<UNIT>-content/                    # deliverable: finalize --sync copies pages here;
-                                             # publication.md is written HERE directly
 ```
 `node tools/workspace.ts` prints `<CONTENT>`/`<WORK>`. If the unit has no render tree
 (`NO_WORK`/`NO_PAGES`): `npm run fetch -- <unit>` then
 `PDF_EXTRACT_OUT=<WORK> bash .claude/skills/pdf-extract/scripts/extract.sh <CONTENT>/<UNIT>.pdf`.
-Never let extract.sh overwrite an existing `text-clean/` — check it first; if it would, stop and ask.
+extract.sh only writes the render (`pages/`, `text/`) — it never touches the page files.
 
 ## Steps
 
 1. **Orient.** `markup.py <unit>`; `python3 .claude/skills/transcribe/scripts/finalize.py <unit>`
-   must pass and the work copy must equal the deliverable (`status.py <unit>` → DONE). If not,
-   stop: the unit needs `transcribe` first.
+   must pass (`status.py <unit>` → DONE). If not, stop: the unit needs `transcribe` first.
 2. **Unit metadata → `publication.md`** (from the source the content rules name). Include
    `pageSequence` and check it: its number of PDF pages must equal the number of page files
    (`npm run validate -- <unit>` reports a mismatch). A landscape page image is usually a spread.
@@ -88,6 +86,10 @@ Never let extract.sh overwrite an existing `text-clean/` — check it first; if 
      "nästa sida"), a range spanning several articles, or a target unit not marked up yet.
    - **A catalogue number printed with the name** (e.g. a Tell number in parentheses) goes inside
      the link text: `[Frubergsgrytet (B4)](…)`. Names files are looked up without it.
+   - **Printed contents page.** Link each entry's title in the printed contents table to its part
+     (`[Titel](../ref/<ns>/<id>/part/<pages>~<n>.md)`), keep the printed page number as printed —
+     never fix it by hand: `npm run nav` adds `(Rättad: N)<!-- toc: correction -->` when it differs
+     from the part's first page. `node tools/toc-link.ts <unit> --apply` does the unambiguous rows.
    - **Only names go in the names file.** A descriptive phrase ("en grotta", "grottan", "a cave on the
      island") may be linked in place when the context identifies the cave, but never becomes a fixed
      entry — at most `candidates` with a hint.
@@ -99,7 +101,7 @@ Never let extract.sh overwrite an existing `text-clean/` — check it first; if 
    "First Last"; printed variants as `aliases`).
 10. **Check and publish.**
     ```bash
-    python3 .claude/skills/transcribe/scripts/finalize.py <unit> --sync   # must say IDENTICAL
+    python3 .claude/skills/transcribe/scripts/finalize.py <unit>          # all checks passed
     npm run validate -- <unit>                                             # 0 errors, 0 warnings
     npm run refs && npm run extract-images -- <unit>
     ```
@@ -112,9 +114,9 @@ Never let extract.sh overwrite an existing `text-clean/` — check it first; if 
 
 ## Resuming an interrupted unit (usage limit, `/loop`)
 A unit stays TODO until `publication.md` exists, so an interrupted run is picked up again by
-`Next`. Before step 4, check the work copy for blocks a previous run already added:
-`grep -c '<!-- \(part\|figure\|note\|page\):' <WORK>/<UNIT>/text-clean/*.md` and `git -C <CONTENT>
-diff --stat` (the deliverable may already be synced). **Continue from what is there — never add a
+`Next`. Before step 4, check the page files for blocks a previous run already added:
+`grep -c '<!-- \(part\|figure\|note\|page\):' <CONTENT>/<UNIT>-content/pageIndex-*.md` and
+`git -C <CONTENT> diff --stat`. **Continue from what is there — never add a
 block that already exists** (same part key, same figure key, a note already converted). Re-check
 the finished steps quickly (validate, refine dry run) rather than redoing them.
 
@@ -125,7 +127,11 @@ guess), leave it unmarked and block it: `python3 .claude/skills/markup/scripts/m
 
 ## Rules
 - Never change the transcribed words. Metadata only; a link wraps existing text.
+- Never write or copy the generated parts: TOC corrections `(…)<!-- toc: correction -->`, the
+  `<!-- toc: start -->`…`<!-- toc: end -->` table in
+  `publication.md` and the page files' last line ending in `<!-- nav: generated -->` come from
+  `npm run nav` (finalize and the pre-commit hook run it). Leave an existing nav line as it is.
 - Every block is ONE line. YAML values with `:`, `"`, `#`, `|` or leading digits are quoted.
-- Edit the work copy, never the deliverable's page files (except via `finalize --sync`).
+- Edit the page files in `<CONTENT>/<UNIT>-content/` directly — there is no work copy.
 - `publication.md` is written last-but-one (after the pages validate), so `markup.py` only shows
   MARKED for a finished unit.

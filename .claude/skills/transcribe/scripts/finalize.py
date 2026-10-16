@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
-"""Hygiene-check a unit's text-clean/, and optionally sync the deliverable.
+"""Hygiene-check a unit's page files (the deliverable <name>-content/, the only copy) and
+refresh its generated navigation lines.
 
-    python3 finalize.py 1987_2            # checks only (safe, read-only)
+    python3 finalize.py 1987_2            # checks (+ rewrites only the navigation lines)
     python3 finalize.py 1987_2 --join     # + join cross-page hyphenation first
-    python3 finalize.py 1987_2 --sync     # + copy to the <name>-content deliverable and diff
+
+`--sync` is accepted for old prompts and does nothing extra: there is no work copy to copy.
 
 Run --join ONCE, before reviews. Do NOT re-run it after you have manually fixed a
 join: it can re-create a bad join (a page-final fragment that is a truncated caption
@@ -12,9 +14,7 @@ rather than a real continuation gets fused into a fabricated word).
 
 import argparse
 from collections import Counter
-import filecmp
 import re
-import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -60,28 +60,28 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("issue")
     ap.add_argument("--join", action="store_true", help="run join_pagebreaks.py first (once!)")
-    ap.add_argument("--sync", action="store_true", help="copy text-clean -> deliverable, then diff")
+    ap.add_argument("--sync", action="store_true", help="no-op (kept for old prompts)")
     a = ap.parse_args()
 
     d = resolve(a.issue)
-    clean, dst = d / "text-clean", DST / f"{d.name}-content"
+    dst = roots.pages_dir(d.name)
     npages = len(list((d / "pages").glob("page-*.png")))
     print(f"issue: {d.name}  ({npages} page images)")
 
     if a.join:
         print("\n--- join_pagebreaks ---")
-        subprocess.run([sys.executable, str(JOIN), str(clean)], check=True)
+        # join_pagebreaks looks at each file's last line: take the navigation lines off first
+        # (run_nav puts them back below).
+        for f in dst.glob("pageIndex-*.md"):
+            f.write_text(roots.read_page(f), encoding="utf-8")
+        subprocess.run([sys.executable, str(JOIN), str(dst)], check=True)
 
-    files = sorted(clean.glob("pageIndex-*.md"))
-    print(f"\n--- counts ---\ntext-clean: {len(files)}/{npages}")
+    files = sorted(dst.glob("pageIndex-*.md"))
+    print(f"\n--- counts ---\npage files: {len(files)}/{npages}  ({dst})")
     problems = []
-    # Incompleteness is FATAL for --sync specifically: sync deletes the deliverable's
-    # pages before copying, so syncing a short text-clean destroys published work.
-    # A fresh checkout of the standalone repo is exactly that state (deliverables
-    # committed, render tree gitignored and absent).
     incomplete = []
     if len(files) != npages:
-        incomplete.append(f"text-clean has {len(files)} files, expected {npages}")
+        incomplete.append(f"{dst.name} has {len(files)} page files, expected {npages}")
     expected = {f"pageIndex-{i:03d}.md" for i in range(npages)}
     missing = sorted(expected - {f.name for f in files})
     if missing:
@@ -96,7 +96,7 @@ def main():
     bare = []
     for f in files:
         idx = int(f.stem.split("-")[1])
-        for i, ln in enumerate(f.read_text(encoding="utf-8").split("\n"), 1):
+        for i, ln in enumerate(roots.read_page(f).split("\n"), 1):
             if RE_FOLIO.match(ln.strip()):
                 bare.append((f.name, i, int(ln.strip()), int(ln.strip()) - (idx + 1)))
     stray = []
@@ -110,7 +110,7 @@ def main():
     dangling, soft, ents, tags, tables, placeholders, folios = [], [], [], [], [], [], []
     badmark, seen_marks = [], []  # page markers: malformed, and (file, folio) in order
     for f in files:
-        text = f.read_text(encoding="utf-8")
+        text = roots.read_page(f)
         lines = text.split("\n")
         # Only numeric labels take part in the order/climb checks; a label like
         # "Omslag" or "iv" is validated against pageSequence by validate.ts instead.
@@ -151,7 +151,7 @@ def main():
                 i += 1
         idx = int(f.stem.split("-")[1])
         raw = d / "text" / f"page-{idx + 1:02d}.md"
-        if raw.is_file() and filecmp.cmp(f, raw, shallow=False):
+        if raw.is_file() and text.rstrip("\n") == raw.read_text(encoding="utf-8").rstrip("\n"):
             placeholders.append(f.name)
 
     def report(label, items, note=""):
@@ -201,7 +201,7 @@ def main():
     elif not (roots.ROOT / "node_modules" / "yaml").is_dir():
         print(f"  skipped: run `npm install` in {roots.ROOT} to enable the metadata validator")
     else:
-        r = subprocess.run(["node", str(VALIDATE), "--errors-only", str(clean)],
+        r = subprocess.run(["node", str(VALIDATE), "--errors-only", str(dst)],
                            capture_output=True, text=True)
         out = [ln for ln in r.stdout.splitlines() if ln.strip()]
         for ln in out[:-1][:25]:
@@ -219,33 +219,18 @@ def main():
     problems += [f"{len(folios)} trailing folio line(s)"] if folios else []
     problems += [f"{len(stray)} stray folio line(s)"] if stray else []
 
-    if a.sync and incomplete:
-        print("\n--- sync ---")
-        print("  REFUSED: " + "; ".join(incomplete))
-        print("  sync deletes the deliverable's pages before copying — it will not run")
-        print("  against an incomplete text-clean. Render and transcribe first.")
-    elif a.sync:
-        print("\n--- sync ---")
-        dst.mkdir(parents=True, exist_ok=True)
-        for old in dst.glob("pageIndex-*.md"):
-            old.unlink()
-        for f in files:
-            shutil.copy2(f, dst / f.name)
-        names = [f.name for f in files]
-        match, mismatch, errors = filecmp.cmpfiles(clean, dst, names, shallow=False)
-        if mismatch or errors:
-            problems.append(f"deliverable differs: {mismatch + errors}")
-            print(f"  MISMATCH: {mismatch + errors}")
-        else:
-            print(f"  IDENTICAL ({len(match)} files) -> {dst}")
+    if files:
+        ok, msg = roots.run_nav(dst.name)
+        print("\n--- navigation lines ---\n  " + (msg.splitlines()[-1] if msg else "ok"))
+        if not ok:
+            problems.append(f"navigation lines: {msg}")
 
     print("\n=== verdict ===")
     if problems:
         for p in problems:
             print(f"  FAIL: {p}")
         sys.exit(1)
-    print("  all checks passed"
-          + ("" if a.sync else "  (re-run with --sync to publish the deliverable)"))
+    print("  all checks passed")
 
 
 if __name__ == "__main__":

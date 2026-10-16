@@ -15,7 +15,7 @@
  */
 import { existsSync, readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs'
 import { join, resolve } from 'node:path'
-import { findLinks, parseBlocks, parseRef, type RefNamespaces, unitInfo } from '../lib/src/index.ts'
+import { findLinks, parseBlocks, parseRef, type RefNamespaces, stripGenerated, unitInfo } from '../lib/src/index.ts'
 import { loadWorkspace, takeContentArg } from './workspace.ts'
 
 const argv = process.argv.slice(2)
@@ -111,7 +111,7 @@ for (const dir of readdirSync(ROOT).filter((d) => d.endsWith('-content')).sort()
   if (!pages.length) continue
   const s = empty()
   const images = new Set<string>()
-  for (const p of pages) add(s, pageStats(readFileSync(join(ROOT, dir, p), 'utf8'), p, images))
+  for (const p of pages) add(s, pageStats(stripGenerated(readFileSync(join(ROOT, dir, p), 'utf8')), p, images))
   const name = dir.replace(/-content$/, '')
   issues.push({ name, year: yearOf(dir), s, kb: imageKB(name, dir, images) })
 }

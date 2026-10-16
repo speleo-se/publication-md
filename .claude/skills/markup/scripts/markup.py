@@ -30,8 +30,8 @@ def state(u):
         return "MARKED"
     if (WORK / u / ".markup-blocked").is_file():
         return "BLOCKED"
-    if not (WORK / u / "text-clean").is_dir():
-        return "NO_WORK"  # no render tree / work copy: render first (pdf-extract), see SKILL.md
+    if not (WORK / u).is_dir():
+        return "NO_WORK"  # no render tree: render first (pdf-extract), see SKILL.md
     if not list((WORK / u / "pages").glob("page-*.png")):
         return "NO_PAGES"
     return "TODO"
@@ -64,10 +64,9 @@ def main():
         print(f"{state(u):<9} {u}")
         if marker.is_file():
             print(f"  blocked:    {marker.read_text(encoding='utf-8').strip()}")
-        print(f"  work copy:  {WORK / u / 'text-clean'}")
         print(f"  pages:      {WORK / u / 'pages'} ({len(pages)} images)")
         print(f"  pdf:        {WORK / u / 'original.pdf'} ({'present' if (WORK / u / 'original.pdf').is_file() else 'MISSING'})")
-        print(f"  deliverable:{CONTENT / (u + '-content')}")
+        print(f"  page files: {CONTENT / (u + '-content')}  (edit here — the only copy)")
         return
     rows = [(u, state(u)) for u in us]
     if a.list:

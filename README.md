@@ -63,6 +63,9 @@ npm run content -- upgrade [<name>]   # migrate a content repo to this publicati
 npm run extract-images -- <unit>      # write <unit>-content/img/* from the PDF
 npm run stats                         # write the repo's STATS.md
 npm run refs                          # regenerate the repo's ref/ (reference targets + indexes)
+npm run toc-sync [-- --apply]          # part blocks, keys, links, pageSequence ← the repo's TOC snapshot
+npm run toc-link [-- --apply]          # link printed contents-table rows to their parts
+npm run nav                           # write the prev/next navigation lines in page files and the contents table in publication.md
 ```
 
 Every tool and skill resolves paths through `tools/workspace.ts`, so they always agree on which
@@ -92,6 +95,11 @@ Generic improvements belong here; corpus quirks belong in the content repo. See
    ([spec/content-repo.md](spec/content-repo.md)), push it to GitHub, and add PDFs.
 3. If you like, list it in [`registry.yaml`](registry.yaml) with a pull request (private repos
    are welcome; say how access is obtained).
+
+## Roadmap
+
+Possible future work (image rotation, two-page images, released versions per unit, image
+verification, image compression): [ROADMAP.md](ROADMAP.md).
 
 ## Licence and authors
 
