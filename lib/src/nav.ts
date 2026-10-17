@@ -21,7 +21,7 @@ export const NAV_MARK = '<!-- nav: generated -->'
 /** Between the links: a box-drawing bar (never `|`, which can start a table) padded with NBSP so the air survives markdown's whitespace collapsing. */
 export const NAV_SEP = '\u00a0 \u2502 \u00a0'
 
-const RE_NAV_LINE = /^\[.*\) <!-- nav: generated -->$/
+const RE_NAV_LINE = /^\[.*(?:\)|\*\*) <!-- nav: generated -->$/
 const isNav = (line: string) => RE_NAV_LINE.test(line)
 
 /** True when a line is a navigation line. */
@@ -117,9 +117,27 @@ function pageLabels(unit: { publication?: string; pages: { name: string }[] }): 
 	const out = new Map<string, string | null>()
 	for (const { name } of unit.pages) {
 		const ls = byIndex.get(idxOf(name))
-		out.set(name, ls?.length ? (ls.length > 1 ? `${ls[0]}–${ls.at(-1)}` : (ls[0] ?? null)) : null)
+		out.set(name, ls?.length ? joinLabels(ls) : null)
 	}
 	return out
+}
+
+/**
+ * The labels of one PDF page as text: a range when they are consecutive (`2|3` → `2–3`,
+ * `iv|v` → `iv–v`), else listed (`20|29` → `20,29`, `Omslag|2` → `Omslag,2`).
+ */
+export function joinLabels(ls: string[]): string {
+	if (ls.length < 2) return ls[0] ?? ''
+	// Consecutive when the range first–last (numbers, roman numerals, letters — PageSequence's
+	// own range rules) yields exactly these labels.
+	let range: string[] | undefined
+	try {
+		range = PageSequence.create(`${ls[0]}-${ls.at(-1)}`)?.getLabelList()
+	} catch {
+		range = undefined
+	}
+	const same = range?.length === ls.length && range.every((l, i) => l.toLowerCase() === (ls[i] ?? '').toLowerCase())
+	return same ? `${ls[0]}–${ls.at(-1)}` : ls.join(',')
 }
 
 const sortFiles = (pages: { name: string }[]) => pages.map((p) => p.name).sort((a, b) => idxOf(a) - idxOf(b))
@@ -146,7 +164,7 @@ export function navLines(
 		const next = files[i + 1]
 		const parts = [
 			...(prev ? [`[⬅️ ${name(prev)}](${prev})`] : []),
-			...(home ? [`[📖 ${title}](${home})`] : []),
+			...(home ? [`[📖 ${title}](${home}) · **${name(f)}**`] : [`**${name(f)}**`]),
 			...(next ? [`[${name(next)} ➡️](${next})`] : []),
 		]
 		out.set(f, `${parts.join(NAV_SEP)} ${NAV_MARK}`)

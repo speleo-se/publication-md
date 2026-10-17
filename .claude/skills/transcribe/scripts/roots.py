@@ -82,7 +82,7 @@ def require_work():
 # Navigation lines (spec §3.6, `npm run nav`): generated prev/next links that only the
 # deliverable carries. Mirror of lib/src/nav.ts stripNav — compare work copy and deliverable
 # with them removed.
-_NAV = re.compile(r"^\[.*\) <!-- nav: generated -->$")
+_NAV = re.compile(r"^\[.*(?:\)|\*\*) <!-- nav: generated -->$")
 
 
 def strip_nav(text):

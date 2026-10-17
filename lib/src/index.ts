@@ -10,6 +10,7 @@ export {
 	type NavPosition,
 	navLines,
 	stripNav,
+	joinLabels,
 	stripCorrections,
 	stripGenerated,
 	applyCorrections,

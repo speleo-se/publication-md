@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { applyCorrections, applyNav, applyToc, stripCorrections, NAV_LABELS, navLines, stripNav, stripToc, tocBlock } from './nav.ts'
+import { applyCorrections, joinLabels, applyNav, applyToc, stripCorrections, NAV_LABELS, navLines, stripNav, stripToc, tocBlock } from './nav.ts'
 import { parseBlocks, stripComments } from './parse.ts'
 import { validateUnit } from './validate.ts'
 
@@ -17,16 +17,26 @@ describe('navigation lines', () => {
 		expect(applyNav(applyNav(page, LINE, 'bottom'), LINE, 'bottom')).toBe(applyNav(page, LINE, 'bottom'))
 		expect(applyNav(applyNav(page, LINE, 'both'), LINE, 'top')).toBe(applyNav(page, LINE, 'top'))
 		expect(applyNav(applyNav(page, LINE, 'bottom'), null, 'none')).toBe(page)
+		const last = '[⬅️ s. 3](pageIndex-002.md) · **s. 4** <!-- nav: generated -->'
+		expect(stripNav(applyNav(page, last, 'bottom'))).toBe(page) // a last page ends in its bold label
+	})
+	it('joins a spread\'s labels as a range only when consecutive', () => {
+		expect(joinLabels(['2', '3'])).toBe('2–3')
+		expect(joinLabels(['20', '29'])).toBe('20,29')
+		expect(joinLabels(['Omslag', '2'])).toBe('Omslag,2')
+		expect(joinLabels(['iv', 'v'])).toBe('iv–v')
+		expect(joinLabels(['iv', 'vi'])).toBe('iv,vi')
+		expect(joinLabels(['7'])).toBe('7')
 	})
 	it('links neighbours by printed label (spreads as ranges, unlabelled pages by PDF number)', () => {
 		const pub = '---\nformat: publication-md/0.1\nid: x\ntype: book\npageSequence: "1,2|3,!3,4"\n---\n'
 		const pages = ['pageIndex-000.md', 'pageIndex-001.md', 'pageIndex-002.md', 'pageIndex-003.md'].map((name) => ({ name }))
 		const l = navLines({ publication: pub, pages }, 'Boken', NAV_LABELS.sv)
-		expect(l.get('pageIndex-000.md')).toBe('[📖 Boken](publication.md)  │  [s. 2–3 ➡️](pageIndex-001.md) <!-- nav: generated -->')
+		expect(l.get('pageIndex-000.md')).toBe('[📖 Boken](publication.md) · **s. 1**  │  [s. 2–3 ➡️](pageIndex-001.md) <!-- nav: generated -->')
 		expect(l.get('pageIndex-001.md')).toBe(
-			'[⬅️ s. 1](pageIndex-000.md)  │  [📖 Boken](publication.md)  │  [PDF-sida 3 ➡️](pageIndex-002.md) <!-- nav: generated -->',
+			'[⬅️ s. 1](pageIndex-000.md)  │  [📖 Boken](publication.md) · **s. 2–3**  │  [PDF-sida 3 ➡️](pageIndex-002.md) <!-- nav: generated -->',
 		)
-		expect(l.get('pageIndex-003.md')).toBe('[⬅️ PDF-sida 3](pageIndex-002.md)  │  [📖 Boken](publication.md) <!-- nav: generated -->')
+		expect(l.get('pageIndex-003.md')).toBe('[⬅️ PDF-sida 3](pageIndex-002.md)  │  [📖 Boken](publication.md) · **s. 4** <!-- nav: generated -->')
 	})
 	it('is parsed as a block, removed from the reading text, and must be one whole line', () => {
 		const text = `Text.\n\n${LINE}\n`

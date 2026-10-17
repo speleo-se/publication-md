@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256">
+  <title>publication-md — logo</title>
+  <g stroke="#1f2328" stroke-width="10" stroke-linejoin="round" fill="#ffffff">
+    <path d="M128 72 C104 56 64 54 32 62 V194 C64 186 104 188 128 204 Z"/>
+    <path d="M128 72 C152 56 192 54 224 62 V194 C192 186 152 188 128 204 Z"/>
+  </g>
+  <g stroke-width="9" stroke-linecap="round">
+    <line x1="52" y1="92" x2="96" y2="94" stroke="#d9480f" stroke-width="13"/>
+    <line x1="52" y1="120" x2="108" y2="124" stroke="#1f2328"/>
+    <line x1="52" y1="144" x2="108" y2="148" stroke="#1f2328"/>
+  </g>
+  <g fill="none" stroke-width="10" stroke-linecap="round" stroke-linejoin="round">
+    <polyline points="148,152 148,104 163,123 178,104 178,152" stroke="#1f2328"/>
+    <g stroke="#d9480f"><line x1="199" y1="104" x2="199" y2="150"/><polyline points="189,140 199,151 209,140"/></g>
+  </g>
+</svg>

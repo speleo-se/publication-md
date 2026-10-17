@@ -1,3 +1,5 @@
+<img src="logo/publication-md.svg" alt="publication-md logo" width="96" align="right">
+
 # publication-md
 
 **A plain-text format for transcribed publications — and the tools to make them.**

@@ -274,13 +274,14 @@ page:
 ```markdown
 …the last paragraph of the page.
 
-[⬅️ s. 4](pageIndex-003.md)  │  [📖 Grottan 1987 nr 2](publication.md)  │  [s. 6 ➡️](pageIndex-005.md) <!-- nav: generated -->
+[⬅️ s. 4](pageIndex-003.md)  │  [📖 Grottan 1987 nr 2](publication.md) · **s. 5**  │  [s. 6 ➡️](pageIndex-005.md) <!-- nav: generated -->
 ```
 
 - It is **not content**. A consumer removes every line that ends with `<!-- nav: generated -->`
   — the links included — together with the blank line that
   separates it from the text (`stripNav` in the reference library). Removing only the comments is
   not enough: the links would remain.
+- The middle shows the current page's printed label(s) in bold (`**s. 16–17**` for a spread).
 - The links are divided by `│` (U+2502) padded with no-break spaces — never `|`, which can start
   a table. The marker ends the line and the line holds only the links. (It is not put first: a line that
   starts with `<!--` is an HTML block in CommonMark, and GitHub or VS Code would not render its
