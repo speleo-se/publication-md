@@ -1,25 +1,68 @@
-// For format details, see https://aka.ms/devcontainer.json. For config options, see the
-// README at: https://github.com/devcontainers/templates/tree/main/src/typescript-node
+// claude-shared kit v4 — copied into this repository, not referenced.
+//
+// No registry login, no devcontainer features, no lockfile: this builds from the
+// Dockerfile next to it. The only thing it expects from the host is ~/claude-shared,
+// a link to the claude-shared/ folder of the kit checkout (for the skills mount below).
+//
+// Run `~/claude-shared/skills/devcontainer-kit/bin/doctor.sh` on the host if the container starts but Claude Code has
+// no skills or asks you to log in.
 {
 	"name": "publication-md — Claude Code + PDF tools",
-	// Or use a Dockerfile or Docker Compose file. More info: https://containers.dev/guide/dockerfile
-	"build": {
-		"dockerfile": "Dockerfile",
-		"args": {
-			"TZ": "${localEnv:TZ:Europe/Stockholm}",
-			"GIT_DELTA_VERSION": "0.18.2",
-			"ZSH_IN_DOCKER_VERSION": "1.2.0"
-		}
+	"build": { "dockerfile": "Dockerfile", "context": "." },
+
+	"runArgs": [
+		// Lets code in the container reach services on the host by name.
+		"--add-host=host.docker.internal:host-gateway"
+		// To also drop raw sockets (blocks ping; NET_ADMIN is already absent since
+		// nothing here adds capabilities): "--cap-drop=NET_RAW"
+	],
+
+	"mounts": [
+		// Shared skills, read-only. Every directory under it auto-loads as a
+		// <name>@skills-dir plugin at session start — no marketplace, no install,
+		// no clone, no credentials. Update them with `git pull` in the kit checkout.
+		"source=${localEnv:HOME}/claude-shared/skills,target=/home/node/.claude/skills,type=bind,readonly",
+		// Per-project Claude config and history. Deliberately not the host's
+		// ~/.claude: one project's container should not be able to read every
+		// project's history.
+		"source=claude-config-${devcontainerId},target=/home/node/.claude,type=volume",
+		"source=claude-history-${devcontainerId},target=/commandhistory,type=volume",
+		// gdrive CLI credentials (npm run fetch for gdrive sources), kept across rebuilds
+		"source=gdrive-config-${devcontainerId},target=/home/node/.config/gdrive3,type=volume",
+		// Google login for `npm run fetch` (tools/google.ts), kept across rebuilds
+		"source=pmd-config-${devcontainerId},target=/home/node/.config/publication-md,type=volume"
+	],
+
+	"containerEnv": {
+		"CLAUDE_CONFIG_DIR": "/home/node/.claude",
+		"POWERLEVEL9K_DISABLE_GITSTATUS": "true",
+		"LAUNCH_EDITOR": "code",
+		"NODE_OPTIONS": "--max-old-space-size=4096",
+		"TZ": "${localEnv:TZ:Europe/Stockholm}"
 	},
 
-	// Configure tool-specific properties.
+	// Dev-server ports. appPort publishes them on the host at fixed numbers;
+	// forwardPorts is discovered per-session and moves around, which breaks
+	// anything that hardcodes a URL (OAuth callbacks especially).
+	"appPort": [],
+
+	// Installs dependencies once, after the container is created.
+	// Uncommented automatically by new-project.sh when a lockfile is present.
+	"postCreateCommand": "npm ci",
+
+	// Claude Code user-scope defaults — remote control at startup, input-needed
+	// notifications, bgIsolation none, the kit status line. Merged into
+	// ~/.claude/settings.json on every start; values already there win, so /config
+	// changes stick. Edit them in devcontainer-kit/claude/ in the kit checkout.
+	"postStartCommand": "/home/node/.claude/skills/devcontainer-kit/bin/seed-claude-settings.sh",
 
 	"customizations": {
 		"vscode": {
 			"extensions": [
-				"anthropic.claude-code",
 				"eamodio.gitlens",
-				"mhutchie.git-graph"
+				"mhutchie.git-graph",
+				// IDE integration for the claude CLI (diffs, diagnostics, selection).
+				"anthropic.claude-code"
 			],
 			"settings": {
 				"terminal.integrated.defaultProfile.linux": "zsh",
@@ -35,24 +78,8 @@
 			}
 		}
 	},
+
 	"remoteUser": "node",
-	"mounts": [
-		"source=claude-code-bashhistory-${devcontainerId},target=/commandhistory,type=volume",
-		"source=claude-code-config-${devcontainerId},target=/home/node/.claude,type=volume",
-		// gdrive CLI credentials (npm run fetch for gdrive sources), kept across rebuilds
-		"source=gdrive-config-${devcontainerId},target=/home/node/.config/gdrive3,type=volume",
-		// Google login for `npm run fetch` (tools/google.ts), kept across rebuilds
-		"source=pmd-config-${devcontainerId},target=/home/node/.config/publication-md,type=volume"
-	],
-	"containerEnv": {
-		"NODE_OPTIONS": "--max-old-space-size=4096",
-		"CLAUDE_CONFIG_DIR": "/home/node/.claude",
-		"POWERLEVEL9K_DISABLE_GITSTATUS": "true",
-		"LAUNCH_EDITOR": "code"
-	},
 	"workspaceMount": "source=${localWorkspaceFolder},target=/workspace,type=bind,consistency=delegated",
-	"workspaceFolder": "/workspace",
-	// Default Claude Code settings (Remote Control at startup, input-needed notifications);
-	// only adds missing keys, so /config changes stick. See claude-defaults.sh.
-	"postCreateCommand": "sh .devcontainer/claude-defaults.sh"
+	"workspaceFolder": "/workspace"
 }

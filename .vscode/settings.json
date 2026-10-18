@@ -1,12 +1,18 @@
 {
-	// Färga VS Codes vänstra verktygsfält (Activity Bar) rött, så att publication-md-fönstret
-	// skiljer sig från content-repona. Byt hex nedan om du vill ha en annan nyans.
+	// Activity bar color, so this window is easy to tell apart from the others.
+	// Red, to set publication-md apart from the content repos.
+	//
+	// Written for VS Code's Modern UI, which is on by default: modernActivityBar.*
+	// paints the bar, and activityBar.inactiveForeground is the one classic key it
+	// still reads. The other activityBar.* keys have no effect there, so none are set.
 	"workbench.colorCustomizations": {
-		"activityBar.background": "#B3261E",
-		"activityBar.foreground": "#ffffff",
-		"activityBar.inactiveForeground": "#ffffffb0",
-		"activityBarBadge.background": "#6E1510",
-		"activityBarBadge.foreground": "#ffffff"
+		"modernActivityBar.background": "#B3261E",
+		"modernActivityBarItem.activeBackground": "#8B1D17",
+		"modernActivityBarItem.activeForeground": "#FFFFFF",
+		"modernActivityBarItem.hoverBackground": "#9F211A",
+		"modernActivityBarItem.hoverForeground": "#FFFFFF",
+		// Modern UI still reads this one classic key, for the unselected icons.
+		"activityBar.inactiveForeground": "#ffffffb0"
 	},
 	// Show the content repos under content/<name> as their own repositories in Source Control.
 	// They sit two levels down (and are gitignored here), beyond VS Code's default scan depth of 1.
@@ -29,5 +35,7 @@
 	"workbench.editorAssociations": {
 		"*.md": "vscode.markdown.preview.editor",
 		"git:/**/*.md": "default"
-	}
+	},
+	// Keeps the worktree picker working when .claude/worktrees exists.
+	"git.detectWorktrees": true
 }
